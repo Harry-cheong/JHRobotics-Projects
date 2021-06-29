@@ -9,3 +9,7 @@ Github repository: https://github.com/ev3dev/ev3dev-lang-python
 
 Google Docs: https://docs.google.com/document/d/1rhIrUA4gwCylg3cqh-llEJyvvVXZmMPUkJYAeubgDIs/edit?usp=sharing
 
+## Organization 
+
+![NRC 2021 Plan](https://user-images.githubusercontent.com/73152515/123819948-c31a4800-d92c-11eb-85e1-a48e1286837a.jpg)
+
