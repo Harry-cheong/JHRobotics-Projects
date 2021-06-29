@@ -1,10 +1,14 @@
 # NRC2021
 
-## ev3dev
+## Operating System
 
-Documentation: https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/ev3dev-stretch/index.html
+ev3dev official website: https://www.ev3dev.org/
 
-Github repository: https://github.com/ev3dev/ev3dev-lang-python
+ev3dev Documentation: https://ev3dev-lang.readthedocs.io/projects/python-ev3dev/en/ev3dev-stretch/index.html
+
+ev3dev Github repository: https://github.com/ev3dev/ev3dev-lang-python
+
+ev3dev available software package: https://packages.debian.org/stretch/mips/python/
 
 ## Plan 
 
@@ -12,11 +16,11 @@ Google Docs: https://docs.google.com/document/d/1rhIrUA4gwCylg3cqh-llEJyvvVXZmMP
 
 ## Organization 
 
-  Yellow Route: Collection of all the cars and batteries 
+Yellow Route: Collection of all the cars and batteries 
 
-  Red Route: Park all the cars and collect all the recharged cars
+Red Route: Park all the cars and collect all the recharged cars
 
-  Blue Route: Park fully charged cars
+ Blue Route: Park fully charged cars
 
 ![NRC 2021 Plan](https://user-images.githubusercontent.com/73152515/123819948-c31a4800-d92c-11eb-85e1-a48e1286837a.jpg)
 
