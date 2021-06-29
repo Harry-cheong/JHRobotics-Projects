@@ -12,8 +12,6 @@ Google Docs: https://docs.google.com/document/d/1rhIrUA4gwCylg3cqh-llEJyvvVXZmMP
 
 ## Organization 
 
-Park your code under the relevant document
-
   Yellow Route: Collection of all the cars and batteries 
 
   Red Route: Park all the cars and collect all the recharged cars
