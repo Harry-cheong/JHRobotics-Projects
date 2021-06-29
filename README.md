@@ -14,10 +14,12 @@ Google Docs: https://docs.google.com/document/d/1rhIrUA4gwCylg3cqh-llEJyvvVXZmMP
 
 Park your code under the relevant document
 
+  Yellow Route: Collection of all the cars and batteries 
+
+  Red Route: Park all the cars and collect all the recharged cars
+
+  Blue Route: Park fully charged cars
+
 ![NRC 2021 Plan](https://user-images.githubusercontent.com/73152515/123819948-c31a4800-d92c-11eb-85e1-a48e1286837a.jpg)
 
-Yellow Route: Collection of all the cars and batteries 
 
-Red Route: Park all the cars and collect all the recharged cars
-
-Blue Route: Park fully charged cars
