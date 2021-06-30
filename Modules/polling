@@ -6,7 +6,6 @@ Class Poll:
     self.us_baseline=0
     self.polling=threading.Event()
   def poll(self,pool_run):
-    self.us_baseline=0
     while poll_run.is_set():
       self.us_baseline+=int(statistics.mean([x.distance_centimeters() for x in self.us]))
       self.us_baseline>>=1
