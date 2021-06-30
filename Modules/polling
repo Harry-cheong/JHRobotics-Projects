@@ -1,0 +1,17 @@
+from dependencies import *
+
+Class Poll:
+  def __init__(self,*sensors):
+    self.us=filter(lambda x:isinstance(x,ev3.sensor.lego.UltrasonicSensor,sensors)
+
+    self.us_baseline=0
+    self.polls=threading.Thread(target=poll,args=sensors)
+  def poll(
+    
+    us_baseline=0
+
+    while True:
+
+      us_baseline+=sensor.distance_centimeters
+      us_baseline/=2
+
