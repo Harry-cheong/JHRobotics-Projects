@@ -1,17 +1,17 @@
 from dependencies import *
 
-Class Poll:
-  def __init__(self,*sensors):
-    self.us=filter(lambda x:isinstance(x,ev3.sensor.lego.UltrasonicSensor),sensors)
-    self.us_baseline=0
-    self.polling=threading.Event()
-  def poll(self,pool_run):
-    while poll_run.is_set():
-      self.us_baseline+=int(statistics.mean([x.distance_centimeters() for x in self.us]))
-      self.us_baseline>>=1
-  def start(self):
-    self.polling.set()
-    self.polls=threading.Thread(target=self.poll,args=(self.polling,),daemon=True)
-    self.polls.start()
-  def stop(self):
-    self.polling.clear()
+class Poll:
+    def __init__(self,*sensors):
+        self.us=filter(lambda x:isinstance(x,ev3.sensor.lego.UltrasonicSensor),sensors)
+        self.us_baseline=0
+        self.polling=threading.Event()
+    def poll(self,pool_run):
+        while poll_run.is_set():
+            self.us_baseline+=int(statistics.mean([x.distance_centimeters() for x in self.us]))
+            self.us_baseline>>=1
+    def start(self):
+        self.polling.set()
+        self.polls=threading.Thread(target=self.poll,args=(self.polling,),daemon=True)
+        self.polls.start()
+    def stop(self):
+        self.polling.clear()
