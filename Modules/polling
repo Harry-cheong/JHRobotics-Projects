@@ -11,7 +11,7 @@ Class Poll:
       self.us_baseline>>=1
   def start(self):
     self.polling.set()
-    self.polls=threading.Thread(target=self.poll,args=(self,self.polling),daemon=True)
+    self.polls=threading.Thread(target=self.poll,args=(self.polling,),daemon=True)
     self.polls.start()
   def stop(self):
     self.polling.clear()
