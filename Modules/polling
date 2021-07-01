@@ -8,8 +8,8 @@ class Poll:
     def poll(self,poll_run):
         n=0
         while poll_run.is_set():
-            self.us_baseline+=(min([x.distance_centimeters for x in self.us])-self.us_baseline)/(n+1)
             n+=1
+            self.us_baseline+=(min([x.distance_centimeters for x in self.us])-self.us_baseline)/n
     def start(self):
         self.polling.set()
         self.polls=threading.Thread(target=self.poll,args=(self.polling,),daemon=True)
