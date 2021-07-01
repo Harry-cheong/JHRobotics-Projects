@@ -19,4 +19,4 @@ def follow_for(baseline,us,k):
   return not us.distance_centimeters+k<baseline
 
 tank=MoveTank(OUPUT_WHATEVER,OUTPUT_WHATEVER)
-tank.follow_line(1,1,1,100,50,follow_for=follow_for,baseline=polls.us_baseline,us_s,20)
+tank.follow_line(1,1,1,100,50,follow_for=follow_for,baseline=polls.us_baseline,us=us_s,k=20)
