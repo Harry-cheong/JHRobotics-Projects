@@ -1,1 +1,22 @@
+from ev3dev2.motor import MoveTank,OUTPUT_A,OUTPUT_B,OUTPUT_C,OUTPUT_D
+from ev3dev2.sensor.lego import UltrasonicSensor
+from ev3dev2.sensor import INPUT_1,INPUT_2,INPUT_3,INPUT_4
+from ev3dev2.led import Led
+from ev3dev2.button import Button
+from polling import *
 
+leds=Led()
+leds.set_color('LEFT','RED')
+leds.set_color('RIGHT','RED')
+Button().wait_for_pressed('ENTER')
+
+
+us_s=UltrasonicSensor(INPUT_WHATEVER)
+polls=Poll()
+polls.start()
+
+def follow_for(baseline,us,k):
+  return not us.distance_centimeters+k<baseline
+
+tank=MoveTank(OUPUT_WHATEVER,OUTPUT_WHATEVER)
+tank.follow_line(1,1,1,100,50,follow_for=follow_for,baseline=polls.us_baseline,us_s,20)
