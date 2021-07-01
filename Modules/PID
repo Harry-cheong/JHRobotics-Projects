@@ -20,3 +20,4 @@ def follow_for(baseline,us,k):
 
 tank=MoveTank(OUPUT_WHATEVER,OUTPUT_WHATEVER)
 tank.follow_line(1,1,1,100,50,follow_for=follow_for,baseline=polls.us_baseline,us=us_s,k=20)
+polls.stop()
