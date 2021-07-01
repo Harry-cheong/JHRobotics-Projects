@@ -2,16 +2,18 @@ from dependencies import *
 
 class Poll:
     def __init__(self,*sensors):
-        self.us=filter(lambda x:isinstance(x,ev3.sensor.lego.UltrasonicSensor),sensors)
+        self.us=list(filter(lambda x:isinstance(x,UltrasonicSensor),sensors))
         self.us_baseline=0
         self.polling=threading.Event()
-    def poll(self,pool_run):
+    def poll(self,poll_run):
+        n=0
         while poll_run.is_set():
-            self.us_baseline+=int(statistics.mean([x.distance_centimeters() for x in self.us]))
-            self.us_baseline>>=1
+            self.us_baseline+=(min([x.distance_centimeters for x in self.us])-self.us_baseline)/(n+1)
+            n+=1
     def start(self):
         self.polling.set()
         self.polls=threading.Thread(target=self.poll,args=(self.polling,),daemon=True)
         self.polls.start()
     def stop(self):
         self.polling.clear()
+        self.polls.join()
