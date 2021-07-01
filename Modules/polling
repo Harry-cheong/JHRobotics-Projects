@@ -1,4 +1,5 @@
-from dependencies import *
+from ev3dev2.sensor.lego import UltrasonicSensor
+import threading
 
 class Poll:
     def __init__(self,*sensors):
@@ -9,7 +10,10 @@ class Poll:
         n=0
         while poll_run.is_set():
             n+=1
-            self.us_baseline+=(min([x.distance_centimeters for x in self.us])-self.us_baseline)/n
+            try:
+                self.us_baseline+=(min([x.distance_centimeters for x in self.us])-self.us_baseline)/n
+            except Exception:
+                pass
     def start(self):
         self.polling.set()
         self.polls=threading.Thread(target=self.poll,args=(self.polling,),daemon=True)
