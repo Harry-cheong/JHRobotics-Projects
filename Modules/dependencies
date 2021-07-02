@@ -1,4 +1,0 @@
-import ev3dev2 as ev3
-import math
-import time
-import threading
