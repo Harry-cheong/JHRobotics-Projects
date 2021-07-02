@@ -1,0 +1,22 @@
+import logging 
+
+class slider():
+	def __init__(self, batterypos):
+      	
+		self.batterypos = []
+		self.vacancy = []
+		self.ccpos = []
+		self.cars = []
+  # batterypos - the compartments in the storage where the batteries will be held
+  # vacancy - check for empty slots in the storage to store fully charged battery 
+  # ccpos - pos of charged cars in the storage system
+    
+	def align():
+		pass
+   
+	def get_nearest_car():
+		pass
+   
+	def storingcars(self, colour):
+		self.cars.append(colour)
+  # a lot of work needs to be done here
