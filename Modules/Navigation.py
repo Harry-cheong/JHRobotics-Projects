@@ -151,7 +151,7 @@ class MotCtrl(Config):
 
 exe = MotCtrl()
 exe.runpid(0.6,0,1,40,target_light_intensity = 20)
-while not line.lm.position > 3000:
-    print(pid.lm.position)   
-line.stop_pid()
+while not exe.lm.position > 3000:
+    print(exe.lm.position)   
+exe.stop_pid()
    
