@@ -160,6 +160,7 @@ class MotCtrl(Config):
     def clear_log(self):
         self.ls_log = []
 
+#Test
 exe = MotCtrl()
 
 exe.rls.calibrate_ref(0, 100)
