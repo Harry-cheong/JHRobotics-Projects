@@ -24,6 +24,16 @@ leds.set_color('RIGHT', 'RED')
 while not buttons.enter:
     pass
 
+class LightSensor(ColorSensor):
+    def __init__(self):
+        self.minRef = 0
+        self.maxRef = 100
+
+        ColorSensor.__init__(self)
+
+    def calibrate_ref(self, minRef, maxRef):
+        self.minRef = minRef
+        self.maxRef = maxRef
 
 class Config():
     def __init__(self): 
@@ -31,17 +41,11 @@ class Config():
         self.rm = LargeMotor(OUTPUT_C)
 
 
-        self.lls = ColorSensor(INPUT_2)
-        self.rls = ColorSensor(INPUT_3)
-        self.minRef = 0
-        self.maxRef = 100
+        self.lls = LightSensor(INPUT_2)
+        self.rls = LightSensor(INPUT_3)
 
         self.steering = MoveSteering(OUTPUT_B, OUTPUT_C)
         self.movetank = MoveTank(OUTPUT_B, OUTPUT_C)
-    
-    def calibrate_ls(self,minRef,maxRef):
-        self.minRef = minRef
-        self.maxRef = maxRef 
 
 class MotCtrl(Config):
     def __init__(self):
@@ -49,10 +53,11 @@ class MotCtrl(Config):
         #threading
         self.rlslock = threading.Lock()
         self.llslock = threading.Lock()
-        self.event = threading.Event()
+        self.pid = threading.Event()
+        self.poll = threading.Event()
         
         #logging
-        self.inters = False
+        self.ls_log = []
 
         #inheritance 
         Config.__init__(self)
@@ -66,14 +71,14 @@ class MotCtrl(Config):
                     target_light_intensity = None,
                     follow_left_edge = True,
                     right_light_sensor = True,
-                    anticipate_intersection = False):
+                    override_intersection = False):
         
         if right_light_sensor:
             ls = self.rls
-            self.rlslock.acquire()
+            acquired = self.rlslock.acquire()
         else:
             ls = self.lls
-            self.llslock.acquire()
+            acquired = self.llslock.acquire()
         
         ls.mode = 'COL-REFLECT'
 
@@ -82,7 +87,8 @@ class MotCtrl(Config):
         
         while pid_run.is_set():
 
-            error = target_light_intensity - (100 * ( ls.reflected_light_intensity - self.minRef ) / ( self.maxRef - self.minRef ))
+            print('ref:{ref}'.format(ref = ls.reflected_light_intensity))
+            error = target_light_intensity - (100 * ( ls.reflected_light_intensity - ls.minRef ) / ( ls.maxRef - ls.minRef))
 
             if error == 0:
                 integral = 0
@@ -100,57 +106,68 @@ class MotCtrl(Config):
             self.steering.on(steering, SpeedPercent(speed))
             print(steering)
         
-        self.rlslock.release() if right_light_sensor else self.llslock.release()
+        acquired.release()
         
 
     def runpid(self,
                 kp, 
                 ki,
                 kd,
-                speed,
+                speed, 
                 Daemon = None,
                 target_light_intensity = None, 
                 follow_left_edge = True, 
                 right_light_sensor = True,
-                anticipate_intersection = True):
+                poll_intersection = True):
 
-        self.event.set()
-        self.pid = threading.Thread(target=self.pid_follow,args=(kp,ki,kd,speed), kwargs = {'target_light_intensity' : target_light_intensity, 'follow_left_edge' : follow_left_edge, 'right_light_sensor' : right_light_sensor, 'anticipate_intersection' : anticipate_intersection}, daemon = Daemon)
-        self.pid.start()
+        self.pid.set()
+        self._pid = threading.Thread(target = self.pid_follow, args = (kp,ki,kd,speed), kwargs = {'target_light_intensity' : target_light_intensity, 'follow_left_edge' : follow_left_edge, 'right_light_sensor' : right_light_sensor, 'override_intersection' : intersection, 'pid_run' : self.pid}, daemon = Daemon)
+        self._pid.start()
 
-        if detect_intersection:
-            self.inters = threading.Thread(target=detect_intersection, args=(), daemon=None)
-
-    def stop_pid(self):
-        self.event.clear()
-        self.pid.join()
-        self.steering.off()
-
-    def detect_intersection(self,args):
-        try:
-            self.llslock.acquire(blocking = False)
-            ls = self.lls
-        except:
-            self.rlslock.acquire()
-            ls = self.rls
+        if poll_intersection:
+            start_inters_poll(not right_light_sensor)
+    
+    def start_inters_poll(self, right_light_sensor):
+        self.poll.set()
+        self._poll = threading.Thread(target = self.inters_pull, args = (right_light_sensor), kwargs = {'poll_run': self.poll})
+        self._poll.start()
+    
+    def inters_poll(self, right_light_sensor, poll_run = True):
         
+        if right_light_sensor:
+            if self.rlslock.acquire(blocking = False): ls = self.rls 
+            else: raise SensorUnavailable       
+        else: 
+            if self.llslock.acquire(): ls = self.lls
+            else: raise SensorUnavailable
+ 
         ls.mode = 'COL-COLOR'
 
-        logging = []
+        while poll_run.is_set():
+            time.sleep(0.2)
+            self.ls_log.append(ls.color)
 
-
-
+        acquire.release()
+    
+    def stop_poll(self):
+        self.poll.clear()
+        self._poll.join()
         
-        
-        
-        
-        
-
-    def MotorRegulation():
-        pass
+    def stop_pid(self):
+        self.pid.clear()
+        self._pid.join()
+    
+    def clear_log(self):
+        self.ls_log = []
 
 exe = MotCtrl()
-exe.runpid(0.6,0,1,40,target_light_intensity = 20)
+
+exe.rls.calibrate_ref(0, 100)
+exe.lls.calibrate_ref(0, 100)
+
+exe.runpid(0.6,0,1,40,target_light_intensity = 20, right_light_sensor = True, poll_intersection = True)
+
+
 while not exe.lm.position > 3000:
     print(exe.lm.position)   
 exe.stop_pid()
