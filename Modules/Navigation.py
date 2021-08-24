@@ -5,57 +5,58 @@ from ev3dev2.led import Leds
 from ev3dev2.button import Button
 from ev3dev2.sensor.lego import ColorSensor
 from ev3dev2.sensor import INPUT_2, INPUT_3
-from time import sleep
+from ev3dev2.sound import Sound
+import time
 import threading
 import collections
 
-#Sensors and Brick
+# Instantiate Brick
 leds = Leds()
 buttons = Button()
+spk = Sound()
 
-run = threading.Event()
+# Instantiate Sensors
+left_ls = ColorSensor(INPUT_2)
+right_ls = ColorSensor(INPUT_3)
 
-#Motors
-tank = MoveTank(OUTPUT_C,OUTPUT_B)
+minRef = 0 
+maxRef = 100
 
-#start
+# Instantiate Motors
+left_motor = LargeMotor(OUTPUT_B)
+right_motor = LargeMotor(OUTPUT_C)
+
+steering = MoveSteering(OUTPUT_B, OUTPUT_C)
+movetank = MoveTank(OUTPUT_B, OUTPUT_C)
+
+# Program Ready
 leds.set_color('LEFT', 'RED')
 leds.set_color('RIGHT', 'RED')
 while not buttons.enter:
     pass
 
-class Config():
-    def __init__(self): 
-        self.lm = LargeMotor(OUTPUT_B)
-        self.rm = LargeMotor(OUTPUT_C)
-
-
-        self.lls = ColorSensor(INPUT_2)
-        self.rls = ColorSensor(INPUT_3)
-        self.minRef = 0
-        self.maxRef = 100
-
-        self.steering = MoveSteering(OUTPUT_B, OUTPUT_C)
-        self.movetank = MoveTank(OUTPUT_B, OUTPUT_C)
-
-    def calibrate_ref(self, minRef, maxRef):
-        self.minRef = minRef
-        self.maxRef = maxRef
-
-class MotCtrl(Config):
+class Navigate:
     def __init__(self):
+        # Motors
+        self.lm = left_motor
+        self.rm = right_motor
+
+        self.steering = steering
+        self.movetank = movetank
+
+        # Sensors
+        self.lls = left_ls
+        self.rls = right_ls
     
-        #threading
+        # Threading
         self.pid = threading.Event()
         self.poll = threading.Event()
         
-        #logging
+        # Logging
         self.ls_log = []
-        self.analyse_log = []
-        self.intersection = False
+        self.intersection = 0
+        self.intersection_log = []
 
-        #inheritance 
-        Config.__init__(self)
 
     def pid_follow(self,
                     kp,
@@ -80,29 +81,32 @@ class MotCtrl(Config):
         
         last_error = error = integral = 0.0
         derivative = 0.0
-        
+        cycle = 0
+
         while pid_run.is_set():
-            reflected_light_intensity = (100 * ( ls.reflected_light_intensity - self.minRef ) / ( self.maxRef - self.minRef))
+
+            reflected_light_intensity = (100 * ( ls.reflected_light_intensity - minRef ) / ( maxRef - minRef))
             error = target_light_intensity - reflected_light_intensity
 
             if error == 0:
                 integral = 0
             else:
                 integral = integral + error
-
-            derivative = error - last_error
+            
+            if not cycle == 0:
+                derivative = error - last_error
             last_error = error
 
             steering = (kp * error) + (ki * integral) + (kd * derivative)
             steering *= polarity
-
+            
             self.steering.on(steering, SpeedPercent(speed))
-            #print('ref:{ref}, derivative:{d}, steering:{steer} '.format(ref = reflected_light_intensity, steer = steering, d = derivative))
+            cycle += 1
+
+            #print('cycle:{c}, ref:{ref}, error:{err}, steering:{steer} '.format(c = cycle, ref = reflected_light_intensity, steer = steering, err = error))
         
         self.movetank.off()
         
-        
-
     def runpid(self,
                 kp, 
                 ki,
@@ -134,26 +138,24 @@ class MotCtrl(Config):
         ls.mode = 'COL-COLOR'
         p_color = 0
         cycle_count = 0
-        q =collections.deque(maxlen = 3)
+        q = collections.deque(maxlen = 3)
 
         while poll_run.is_set():
-            self.ls_log.append(ls.color)
-            cycle_count+= 1
-
+            #self.ls_log.append(ls.color_name)
+            
             if ls.color != p_color:
-                try:
-                    append_count = cycle_count - self.analyse_log[-1][0] 
-                except:
-                    append_count = cycle_count
-                self.analyse_log.append([cycle_count, append_count, ls.color_name])
+                self.ls_log.append([cycle_count, ls.color])
                 p_color = ls.color
                 q.appendleft(ls.color)
-                #print(q)
+                print(q)
                   
             if list(q) == [6, 1, 6]:
-                self.intersection = True
+                self.intersection += 1
+                self.intersection_log.append((self.intersection, self.lm.position, self.rm.position))
+                spk.play_note('A4', 0.05)    
                 
-    
+            cycle_count+= 1
+                
     def stop_poll(self):
         self.poll.clear()
         self._poll.join()
@@ -164,22 +166,23 @@ class MotCtrl(Config):
     
     def clear_log(self):
         self.ls_log = []
-
-            
+        self.intersection = 0
+        self.intersection_log = []     
 
 #Test
-exe = MotCtrl()
+exe = Navigate() 
 
-exe.calibrate_ref(0, 55)
+exe.runpid(0.08, 0, 1 ,40, target_light_intensity = 40, right_light_sensor = True, follow_right_edge=True)
 
-exe.runpid(0.06, 0, 0.8 ,40,target_light_intensity = 35, right_light_sensor = True,follow_right_edge=True)
 exe.start_inters_poll(right_light_sensor=False)
-#0.23, 0, 0.42, 40
 
-while not exe.lm.position > 2200:
-    if exe.intersection is True:
+
+while True:
+    if exe.intersection == 1:
         break
 
-exe.stop_poll()   
-print(exe.analyse_log) 
 exe.stop_pid()
+exe.stop_poll()
+
+print(exe.intersection_log) 
+print(exe.ls_log)
