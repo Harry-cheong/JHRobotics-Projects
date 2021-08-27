@@ -1,0 +1,127 @@
+#!/usr/bin/env python3
+import collections
+import threading
+from ev3dev2.sensor.lego import ColorSensor, UltrasonicSensor
+from ev3dev2.motor import LargeMotor,OUTPUT_B, OUTPUT_C
+from ev3dev2.sound import Sound
+
+class Poll:
+    def __init__(self, *sensors):
+
+        #Sensors 
+        self.lls = list(filter(lambda x:isinstance(x,ColorSensor),sensors))[0]
+        self.rls = list(filter(lambda x:isinstance(x,ColorSensor),sensors))[1]
+
+        self.us = list(filter(lambda x:isinstance(x,UltrasonicSensor),sensors))[0]
+        self.minRef = 0
+        self.maxRef = 50
+
+        self.lm = LargeMotor(OUTPUT_B)
+        self.rm = LargeMotor(OUTPUT_C)
+        
+        #Threading - Event
+        self.inters_evt = threading.Event()
+        self.us_evt = threading.Event()
+
+        # Threading - Thread
+        self._us = threading.Thread()
+        self._inters = threading.Thread()
+
+        # Logging
+        self.ls_log = []
+        
+        self.intersection_log = []
+        self.intersection = 0
+
+        self.us_log = []
+    
+    def inters_poll(self, right_light_sensor, poll_run = True):
+        
+        if right_light_sensor:
+            ls = self.rls       
+        else: 
+            ls = self.lls
+        
+        ls.mode = 'COL-REFLECT'
+        p_int = None
+        q = collections.deque(maxlen = 3)
+        cycle_count = 0
+
+        while poll_run.is_set():
+            
+            reflected_light_intensity = (100 * ( ls.reflected_light_intensity - self.minRef ) / ( self.maxRef - self.minRef))
+            
+            #self.ls_log.append(reflected_light_intensity)
+
+            if reflected_light_intensity >= 70: _int = 2
+            elif reflected_light_intensity <= 30: _int = 1
+            else: _int = 0
+            
+            self.ls_log.append(_int)
+            '''if _int != p_int and _int != 0:
+                self.intersection_log.append([cycle_count, _int])
+                p_color = _int
+                q.appendleft(_int)
+                
+
+            if list(q) == [2, 1, 2]:
+                self.intersection += 1
+                q.appendleft('I')
+                Sound().play_note('A4', 0.05)
+            print(q)
+            cycle_count+= 1'''    
+
+            
+        
+        """
+        ls.mode = 'COL-COLOR'
+        p_color = 0
+        cycle_count = 0
+        q = collections.deque(maxlen = 3)
+
+        while poll_run.is_set():
+            #self.ls_log.append(ls.color_name)
+            
+            if ls.color != p_color:
+                self.ls_log.append([cycle_count, ls.color])
+                p_color = ls.color
+                q.appendleft(ls.color)
+                #print(q)
+                  
+            if list(q) == [6, 1, 6]:
+                self.intersection += 1
+                #self.intersection_log.append((self.intersection, self.lm.position, self.rm.position))
+                Sound().play_note('A4', 0.05)    
+                
+            cycle_count+= 1
+    """
+
+    def us_poll(self, poll_run = True):
+        while poll_run.is_set():
+            self.us_log.append(self.us.distance_centimeters)
+            #print(self.us.distance_centimeters)
+    
+    def start_us_poll(self):
+        self.us_evt.set()
+        self._us = threading.Thread(target = self.us_poll,kwargs = {'poll_run':self.us_evt}, daemon = None)
+        self._us.start()
+
+    def us_stop(self):
+        self.us_evt.clear()
+        self._us.join()
+
+    def start_inters_poll(self, right_light_sensor = False):
+        self.inters_evt.set()
+        self._inters = threading.Thread(target = self.inters_poll, kwargs = {'right_light_sensor': right_light_sensor,'poll_run': self.inters_evt})
+        self._inters.start()
+
+    def inters_stop(self):
+        self.inters_evt.clear()
+        self._inters.join()
+        
+    def clear_log(self):
+        self.ls_log = []
+        self.intersection_log = [] 
+        self.intersection = 0
+    
+        
