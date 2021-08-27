@@ -1,6 +1,6 @@
 # Obtained Data from ev3
 '''
-</ Abstract from Polling Module >
+</ Abstract from Module >
 
 if reflected_light_intensity >= 70: _int = 2
 elif reflected_light_intensity <= 30: _int = 1
