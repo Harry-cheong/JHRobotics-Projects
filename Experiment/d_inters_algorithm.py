@@ -1,6 +1,6 @@
 # Obtained Data from ev3
 '''
-</ Abstract from Module >
+</ Abstract from Polling Module >
 
 if reflected_light_intensity >= 70: _int = 2
 elif reflected_light_intensity <= 30: _int = 1
@@ -30,33 +30,31 @@ def test(data, constant):
     ofvalue = []
 
     for x in data:
-        if x == 1 or x == 0:
-            value = 0
-        else:
-            value = 1
-        
-        if value != p_int:
-            try:
+        if x != p_int:
+            if cycle != 0:
                 cycle_duration = cycle - log[-1][1]
                 log[-1].append(cycle_duration)
-            except:
-                pass
-            log.append([value,cycle])
-            if value == 1:
-                ofvalue.append([value, cycle])
+            if x == 2:
+                ofvalue.append([x, cycle])
                 try:
-                    if ofvalue[-1][1] - ofvalue[-2][1] < constant:
+                    if ofvalue[-1][1] - ofvalue[-2][1] <= constant:
                         intersection += 1
                 except:
                     pass
-            p_int = value
+            else:
+                if cycle != 0:
+                    if log[-1][0] == 2:
+                        ofvalue.append([2, cycle - 1])
+            
+            log.append([x,cycle])
+            p_int = x
         cycle += 1
-    
-    return intersection
+
     '''print(ofvalue)
     print(log)
-    print(intersection)
     print(data)'''
+    return intersection
+    
 
 def find_best_constant(dataset):
     for constant in range(30):
@@ -67,43 +65,42 @@ def find_best_constant(dataset):
             record.append(result)
             score += -abs(4-result)
 
-        print (f'({constant} {record} {score})')
+        print (f'{constant} {record} {score}')
             
 find_best_constant(Dataset)
 
 '''
-
 harry@LAPTOP-J9DVFUC9 MINGW64 ~/Desktop/Vscode/VScodepy
 $ "C:/Program Files/Python38/python.exe" c:/Users/harry/Desktop/Vscode/VScodepy/intersection.py
-(0 [0, 0, 0, 0, 0, 0] -24)
-(1 [0, 0, 0, 0, 0, 0] -24)
-(2 [0, 0, 0, 0, 0, 0] -24)
-(3 [0, 0, 0, 0, 0, 0] -24)
-(4 [0, 0, 1, 0, 0, 0] -23)
-(5 [0, 0, 1, 0, 0, 0] -23)
-(6 [0, 0, 1, 1, 0, 0] -22)
-(7 [1, 0, 1, 1, 1, 0] -20)
-(8 [1, 2, 4, 3, 2, 1] -11)
-(9 [3, 3, 4, 3, 2, 3] -6)
-(10 [4, 3, 4, 4, 2, 3] -4)
-(11 [4, 3, 4, 4, 2, 3] -4)
-(12 [4, 3, 4, 4, 2, 4] -3)
-(13 [5, 3, 5, 5, 2, 4] -6)
-(14 [5, 3, 5, 5, 2, 4] -6)
-(15 [5, 3, 5, 6, 2, 4] -7)
-(16 [5, 3, 5, 6, 2, 4] -7)
-(17 [5, 3, 5, 6, 2, 4] -7)
-(18 [5, 3, 5, 6, 2, 4] -7)
-(19 [5, 3, 6, 6, 2, 4] -8)
-(20 [5, 3, 6, 6, 2, 4] -8)
-(21 [5, 3, 6, 6, 2, 4] -8)
-(22 [5, 3, 6, 6, 2, 4] -8)
-(23 [5, 3, 6, 6, 2, 4] -8)
-(24 [6, 3, 6, 6, 2, 4] -9)
-(25 [6, 3, 7, 6, 2, 4] -10)
-(26 [6, 3, 7, 6, 2, 4] -10)
-(27 [6, 4, 7, 6, 2, 4] -9)
-(28 [6, 4, 7, 6, 2, 4] -9)
-(29 [6, 4, 7, 6, 2, 4] -9)
+0 [0, 0, 0, 0, 0, 0] -24
+1 [0, 0, 0, 0, 0, 0] -24
+2 [0, 0, 1, 1, 1, 0] -21
+3 [0, 0, 1, 1, 1, 0] -21
+4 [1, 3, 3, 4, 3, 3] -7
+5 [3, 3, 4, 5, 4, 4] -3
+6 [5, 4, 5, 5, 4, 4] -3
+7 [5, 4, 5, 5, 4, 4] -3
+8 [7, 4, 5, 5, 4, 4] -5
+9 [7, 4, 6, 5, 4, 4] -6
+10 [7, 4, 6, 5, 4, 4] -6
+11 [7, 4, 6, 5, 4, 4] -6
+12 [7, 4, 6, 5, 4, 4] -6
+13 [7, 4, 6, 6, 4, 4] -7
+14 [7, 4, 6, 6, 4, 4] -7
+15 [7, 4, 6, 6, 4, 5] -8
+16 [7, 4, 6, 6, 4, 5] -8
+17 [7, 4, 6, 6, 4, 5] -8
+18 [7, 4, 6, 6, 4, 5] -8
+19 [7, 5, 6, 6, 4, 5] -9
+20 [7, 5, 6, 6, 4, 5] -9
+21 [7, 5, 7, 6, 4, 6] -11
+22 [7, 5, 7, 6, 4, 6] -11
+23 [7, 5, 7, 6, 4, 6] -11
+24 [7, 5, 7, 6, 4, 6] -11
+25 [7, 5, 7, 6, 4, 6] -11
+26 [7, 5, 7, 6, 4, 6] -11
+27 [7, 5, 8, 6, 4, 6] -12
+28 [7, 5, 8, 7, 4, 6] -13
+29 [7, 6, 8, 7, 4, 6] -14
 
 '''
