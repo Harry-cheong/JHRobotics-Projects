@@ -38,7 +38,7 @@ def test(data, constant):
                 ofvalue.append([x, cycle])
                 try:
                     if ofvalue[-1][1] - ofvalue[-2][1] <= constant:
-                        for x in data[ofvalue[-2][1]: ofvalue[-1][1]]:
+                        for x in data[ofvalue[-2][1] + 1: ofvalue[-1][1]]:
                           if x == 1:
                             intersection += 1
                             break
