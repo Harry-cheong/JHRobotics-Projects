@@ -2,8 +2,8 @@
 '''
 </ Abstract from Polling Module >
 
-if reflected_light_intensity >= 70: _int = 2
-elif reflected_light_intensity <= 30: _int = 1
+if reflected_light_intensity >= 35: _int = 2
+elif reflected_light_intensity <= 15: _int = 1
 else: _int = 0
 
 '''
