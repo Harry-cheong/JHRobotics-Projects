@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+from ev3dev2.motor import OUTPUT_A, OUTPUT_B,OUTPUT_C, OUTPUT_D, MoveTank, MoveSteering, LargeMotor, MediumMotor, SpeedPercent
+from ev3dev2.led import Leds
+from ev3dev2.button import Button
+from ev3dev2.sensor.lego import ColorSensor, UltrasonicSensor
+from ev3dev2.sensor import INPUT_1, INPUT_2, INPUT_3, INPUT_4
+from ev3dev2.sound import Sound
+import time
+from importlib.machinery import SourceFileLoader
+
+Navigation = SourceFileLoader('Navigation', '/home/robot/Vscode.nrc2021/Navigation').load_module()
+Polling = SourceFileLoader('Polling', '/home/robot/Vscode.nrc2021/Polling').load_module()
+
+# Instantiate Brick
+leds = Leds()
+buttons = Button()
+spk = Sound()
+
+# Instantiate Sensors
+left_ls = ColorSensor(INPUT_2)
+right_ls = ColorSensor(INPUT_3)
+
+minRef = 0 
+maxRef = 100
+
+# Instantiate Motors
+lm = LargeMotor(OUTPUT_B)
+rm = LargeMotor(OUTPUT_C)
+
+steering = MoveSteering(OUTPUT_B, OUTPUT_C)
+tank = MoveTank(OUTPUT_B, OUTPUT_C)
+
+# Start
+leds.set_color('LEFT', 'RED')
+leds.set_color('RIGHT', 'RED')
+while not buttons.enter:
+    pass
+
+# Initialize instances
+pid = Navigation.Navigate() 
+poll = Polling.Poll(ColorSensor(INPUT_2),ColorSensor(INPUT_3), UltrasonicSensor(INPUT_4))
+
+"""
+steering.on_for_degrees(20,SpeedPercent(30),)
+"""
+
+pid.runpid(0.1, 0, 1.1 ,40, target_light_intensity = 40, right_light_sensor = True, follow_right_edge = True)
+
+poll.start_inters_poll(right_light_sensor = False)
+
+poll.start_us_poll()
+
+
+while not lm.position > 1900 :
+    if poll.intersection == 3:
+        break
+
+pid.stop_pid()
+poll.inters_stop()
+poll.us_stop()
+
+print(poll.intersection_log)
+print(poll.intersection) 
+print(poll.ls_log)
+#print(poll.us_log)
