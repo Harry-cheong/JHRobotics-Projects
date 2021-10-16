@@ -103,6 +103,9 @@ class Poll:
                             print('intersection')
                             datalog.append([imptlog[-2],imptlog[-1]])
                             print(imptlog)
+                            self.at_intersection = True
+                            time.sleep(0.3)
+                            self.at_intersection = False
                             imptlog = []
                 else:
                     imptlog.append(_int)
