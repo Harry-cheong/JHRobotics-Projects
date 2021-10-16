@@ -7,8 +7,8 @@ from ev3dev2.sensor import INPUT_2, INPUT_3, INPUT_4
 import time
 
 class Poll:
-    def __init__(self,m_lock, minRef, maxRef):
-
+    def __init__(self,m_lock, minRef, maxRef, rm, lm):
+        ''' DATA COLLECTION '''
         #Sensors 
         self.lls = ColorSensor(INPUT_2)
         self.rls = ColorSensor(INPUT_3)
@@ -42,9 +42,29 @@ class Poll:
         self.us_log_combined = []
 
         self.us_obstacles = []
-        self.us_obstacle_start = False
+
+        ''' OBSTACLE TYPE DETECTION '''
+        # log obstacles
+        self.obstacles = []
+
+        # global variables
+        self.at_obstacle = False
+        self.at_intersection = False
+
+        # local reset variables
+        self.crosses_intersection = False
+        self.start_rot_l = 0
+        self.start_rot_r = 0
+
+        # motors
+        self.rm = rm
+        self.lm = lm
+
+        # constants
+        self.constant_rot_differentiation = 1000
 
 
+    ''' DATA COLLECTION '''
     
     def inters_poll(self, right_light_sensor, poll_run = True):
         
@@ -88,14 +108,6 @@ class Poll:
                     imptlog.append(_int)
                 
                 p_int = _int
-                
-                # if cycle != 0:
-                #     if ofvalue[-2] <= 3 and _int-ofvalue[-2]>2:
-                #         self.intersection += 1
-                #         datalog.append([ofvalue[-2],_int])
-               
-            # cycle += 1
-
         print(ofvalue) 
         print(datalog)  
         print(imptlog)
@@ -118,6 +130,7 @@ class Poll:
                 print('deviation' +  str(self.us_deviation_log[-1]))
                 print('distance' + str(self.us_log[-1]))
                 print(self.us_obstacles)
+                self.obstacle_stop()
                 self.us_log.insert(-2, 'obstacle stop')
                 self.us_deviation_log.insert(-2, 'obstacle stop')
                 self.us_log_combined.insert(-2, ('obstacle stop', 0.0, 0))
@@ -128,6 +141,7 @@ class Poll:
                 print('deviation' +  str(self.us_deviation_log[-1]))
                 print('distance' + str(self.us_log[-1]))
                 print(self.us_obstacles)
+                self.obstacle_start()
                 self.us_log.insert(-2, 'obstacle start')
                 self.us_deviation_log.insert(-2, 'obstacle start')
                 self.us_log_combined.insert(-2, ('obstacle start', 0.0, 0))
@@ -157,5 +171,42 @@ class Poll:
         self.ls_log = []
         self.intersection_log = [] 
         self.intersection = 0
+
+    ''' OBSTACLE TYPE DETECTION '''
+    
+    def obstacle_start(self):
+        self.at_obstacle = True
+        self.crosses_intersection = False
+        self.start_rot_l = self.lm.position
+        self.start_rot_r = self.rm.position
+        while self.at_obstacle:
+            if self.at_intersection:
+                self.crosses_intersection = True
+                break
+
+    def obstacle_stop(self):
+        kr = self.rm.position - self.start_rot_r
+        kl = self.lm.position - self.start_rot_l
+        k = (kr + kl) / 2
+        if not self.crosses_intersection:
+            self.obstacles.append('pillar')
+        elif k >  self.constant_rot_differentiation:
+            self.obstacles.append('wall')
+        else:
+            self.obstacles.append('car')
+        print(self.obstacles)
+
+        self.crosses_intersection = False
+        self.at_obstacle = False
+
+
+
+
+
+
+
+
+
+    
     
         

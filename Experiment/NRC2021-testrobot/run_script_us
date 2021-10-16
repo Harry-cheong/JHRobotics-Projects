@@ -40,7 +40,7 @@ maxRef = 90
 
 # Initialize instances
 ctrl = Navigation.Navigate(m_lock, minRef, maxRef) 
-poll = Polling.Poll(m_lock, minRef, maxRef)
+poll = Polling.Poll(m_lock, minRef, maxRef, ctrl.rm, ctrl.lm)
 
 
 
