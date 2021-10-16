@@ -84,7 +84,7 @@ class Poll:
     def us_poll(self, poll_run = True):
         while poll_run.is_set():
             self.us_log.append(self.us.distance_centimeters)
-            #print(self.us.distance_centimeters)
+            # print(self.us.distance_centimeters)
     
     def start_us_poll(self):
         self.us_evt.set()

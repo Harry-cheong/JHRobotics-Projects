@@ -1,0 +1,161 @@
+#!/usr/bin/env python3
+import threading
+from ev3dev2.sensor.lego import ColorSensor, UltrasonicSensor
+from ev3dev2.motor import LargeMotor,OUTPUT_B, OUTPUT_C
+from ev3dev2.sound import Sound
+from ev3dev2.sensor import INPUT_2, INPUT_3, INPUT_4
+import time
+
+class Poll:
+    def __init__(self,m_lock, minRef, maxRef):
+
+        #Sensors 
+        self.lls = ColorSensor(INPUT_2)
+        self.rls = ColorSensor(INPUT_3)
+
+        self.us = UltrasonicSensor(INPUT_4)
+        self.lm = LargeMotor(OUTPUT_B)
+        self.rm = LargeMotor(OUTPUT_C)
+
+        self.minRef = minRef
+        self.maxRef = maxRef
+        
+        #Lock
+        self.mlock = m_lock 
+        
+        #Threading - Event
+        self.inters_evt = threading.Event()
+        self.us_evt = threading.Event()
+
+        # Threading - Thread
+        self._us = threading.Thread()
+        self._inters = threading.Thread()
+
+        # Logging
+        self.ls_log = []
+        
+        self.intersection_log = []
+        self.intersection = 0
+
+        self.us_log = []
+        self.us_deviation_log = [0]
+        self.us_log_combined = []
+
+        self.us_obstacles = []
+        self.us_obstacle_start = False
+
+
+    
+    def inters_poll(self, right_light_sensor, poll_run = True):
+        
+        if right_light_sensor:
+            ls = self.rls       
+        else: 
+            ls = self.lls
+        
+        ls.mode = 'COL-REFLECT'
+        p_int = None
+        cycle = 0
+        self.ls_log = []
+        log = []
+        grad = 0
+        ofvalue = []
+        datalog = []
+        imptlog = []
+
+        while poll_run.is_set():
+            
+            reflected_light_intensity = (100 * ( ls.reflected_light_intensity - self.minRef ) / ( self.maxRef - self.minRef))
+            
+            _int = int(str(reflected_light_intensity)[:1])
+            
+            # log.append(_int)
+
+            if _int != p_int:
+                ofvalue.append(_int)
+
+                if len(imptlog)>1:
+                    grad = abs(_int-imptlog[-1])
+                    if grad > 2:
+                        imptlog.append(_int)
+                        if imptlog[-2] <= 3 and imptlog[-1]-imptlog[-2]>2:
+                            self.intersection += 1
+                            print('intersection')
+                            datalog.append([imptlog[-2],imptlog[-1]])
+                            print(imptlog)
+                            imptlog = []
+                else:
+                    imptlog.append(_int)
+                
+                p_int = _int
+                
+                # if cycle != 0:
+                #     if ofvalue[-2] <= 3 and _int-ofvalue[-2]>2:
+                #         self.intersection += 1
+                #         datalog.append([ofvalue[-2],_int])
+               
+            # cycle += 1
+
+        print(ofvalue) 
+        print(datalog)  
+        print(imptlog)
+        print(self.intersection)
+            
+
+    def us_poll(self, poll_run = True):
+        kstart = 0
+        kstop = 0
+        k = 0
+        self.us_log.append(self.us.distance_centimeters)
+        while poll_run.is_set():
+            dist = round(self.us.distance_centimeters, 3)
+            self.us_deviation_log.append(round(dist - self.us_log[-1], 1))
+            self.us_log.append(round(dist, 1))
+            self.us_log_combined.append((self.us_deviation_log[-1], self.us_log[-1], k))
+            if self.us_deviation_log[-1] > 10.0 and dist > 25.0 and self.us_log[-2] < 25.0:
+                self.us_obstacles.append('stop' + str(kstop))
+                kstop += 1
+                print('deviation' +  str(self.us_deviation_log[-1]))
+                print('distance' + str(self.us_log[-1]))
+                print(self.us_obstacles)
+                self.us_log.insert(-2, 'obstacle stop')
+                self.us_deviation_log.insert(-2, 'obstacle stop')
+                self.us_log_combined.insert(-2, ('obstacle stop', 0.0, 0))
+                time.sleep(0.1)
+            elif self.us_deviation_log[-1] < -10.0 and dist < 15.0:
+                self.us_obstacles.append('start' + str(kstart))
+                kstart += 1
+                print('deviation' +  str(self.us_deviation_log[-1]))
+                print('distance' + str(self.us_log[-1]))
+                print(self.us_obstacles)
+                self.us_log.insert(-2, 'obstacle start')
+                self.us_deviation_log.insert(-2, 'obstacle start')
+                self.us_log_combined.insert(-2, ('obstacle start', 0.0, 0))
+                time.sleep(0.1)
+            k += 1
+            
+ 
+    def start_us_poll(self):
+        self.us_evt.set()
+        self._us = threading.Thread(target = self.us_poll,kwargs = {'poll_run':self.us_evt}, daemon = None)
+        self._us.start()
+
+    def us_stop_poll(self):
+        self.us_evt.clear()
+        self._us.join()
+
+    def start_inters_poll(self, right_light_sensor = False):
+        self.inters_evt.set()
+        self._inters = threading.Thread(target = self.inters_poll, kwargs = {'right_light_sensor': right_light_sensor,'poll_run': self.inters_evt})
+        self._inters.start()
+
+    def inters_stop(self):
+        self.inters_evt.clear()
+        self._inters.join()
+        
+    def clear_log(self):
+        self.ls_log = []
+        self.intersection_log = [] 
+        self.intersection = 0
+    
+        
