@@ -75,7 +75,6 @@ class Poll:
         
         ls.mode = 'COL-REFLECT'
         p_int = None
-        cycle = 0
         self.ls_log = []
         log = []
         grad = 0
