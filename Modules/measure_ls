@@ -1,0 +1,66 @@
+#!/usr/bin/env python3
+
+from ev3dev2.led import Leds
+from ev3dev2.button import Button
+from ev3dev2.sensor.lego import ColorSensor
+from ev3dev2.sensor import INPUT_2, INPUT_3
+from ev3dev2.display import Display
+import ev3dev2.fonts as fonts
+import time
+
+#Sensors and Brick
+leds = Leds()
+btn = Button()
+screen = Display()
+Font = fonts.load('helvBO24')
+
+lls = ColorSensor(INPUT_2)
+rls = ColorSensor(INPUT_3)
+
+leds.set_color('LEFT', 'RED')
+leds.set_color('RIGHT', 'RED')
+while not btn.enter:
+    pass
+
+leds.off()
+screen.clear()
+time.sleep(0.5)
+
+minRef = 0
+maxRef = 100
+state = 0 
+dataleft = []
+dataright = []
+
+while True:
+    if btn.up():
+        state =  1
+        screen.draw.text((80,64), 'Mode 1', font = Font)
+        screen.update()
+    
+    elif btn.down():
+        state = 2
+        screen.draw.text((80,64), 'Mode 2', font = Font)
+        screen.update()
+    
+    elif btn.enter(): 
+        state = 3
+        screen.draw.text((80,64), 'Mode 3', font = Font)
+        screen.update()
+    
+    dataleft.append(lls.reflected_light_intensity)
+    dataright.append(rls.reflected_light_intensity)
+    minRef = (min(dataleft)+min(dataright))/2
+    maxRef = (max(dataleft)+max(dataright))/2
+
+    if state != 0:
+        if state == 1:
+            print('ogleft = {lls}, ogright = {rls}'.format(lls = lls.reflected_light_intensity, rls = reflected_light_intensity))
+
+        elif state == 2:
+            print('left = {lls}, right = {rls}'.format(lls = (100 * ( lls.reflected_light_intensity - minRef ) / (maxRef - minRef)), rls = (100 * ( rls.reflected_light_intensity - minRef ) / ( maxRef - minRef))))
+        
+        elif state == 3:
+            # print('lls_min = {lls_min}, lls_max = {lls_max}, rls_min = {rls_min}, rls_max = {rls_max}'.format(lls_min = min(dataleft), lls_max = max(dataleft), rls_min =  min(dataright), rls_max = max(dataright)))
+            print('avg_min = {avg_min}, avg_max = {avg_max}'.format(avg_min = minRef, avg_max = maxRef))
+    
