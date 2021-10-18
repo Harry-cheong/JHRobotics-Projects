@@ -161,25 +161,25 @@ class Navigate:
         end = 0 
 
         while not (end - start) > maxduration:
-            if lls.reflected_light_intensity < target_black:
-                lm.on(forward_spd)
+            if self.lls.reflected_light_intensity < target_black:
+                self.lm.on(forward_spd)
             else:
-                if lls.reflected_light_intensity > target_white:
-                    lm.on(backward_spd)
+                if self.lls.reflected_light_intensity > target_white:
+                    self.lm.on(backward_spd)
                 
                 else:
-                    lm.motor.off()
+                    self.lm.motor.off()
             
-            if rls.reflected_light_intensity < target_black:
-                rm.on(forward_spd)
+            if self.rls.reflected_light_intensity < target_black:
+                self.rm.on(forward_spd)
             else:
-                if rls.reflected_light_intensity > target_white:
-                    rm.on(backward_spd)
+                if self.rls.reflected_light_intensity > target_white:
+                    self.rm.on(backward_spd)
                 
                 else:
-                    rm.motor.off()
+                    self.rm.motor.off()
             
-            if target_black < lls.reflected_light_intensity < target_white and target_black < rls.reflected_light_intensity < target_white:
+            if target_black < self.lls.reflected_light_intensity < target_white and target_black < self.rls.reflected_light_intensity < target_white:
                 break
             
             end = time.perf_counter()

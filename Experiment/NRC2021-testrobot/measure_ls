@@ -55,7 +55,7 @@ while True:
 
     if state != 0:
         if state == 1:
-            print('ogleft = {lls}, ogright = {rls}'.format(lls = lls.reflected_light_intensity, rls = reflected_light_intensity))
+            print('ogleft = {lls}, ogright = {rls}'.format(lls = lls.reflected_light_intensity, rls = rls.reflected_light_intensity))
 
         elif state == 2:
             print('left = {lls}, right = {rls}'.format(lls = (100 * ( lls.reflected_light_intensity - minRef ) / (maxRef - minRef)), rls = (100 * ( rls.reflected_light_intensity - minRef ) / ( maxRef - minRef))))

@@ -26,10 +26,12 @@ class Poll:
         #Threading - Event
         self.inters_evt = threading.Event()
         self.us_evt = threading.Event()
+        self.object_evt = threading.Event()
 
         # Threading - Thread
         self._us = threading.Thread()
         self._inters = threading.Thread()
+        self._object = threading.Thread()
 
         # Logging
         self.ls_log = []
@@ -61,7 +63,7 @@ class Poll:
         self.lm = lm
 
         # constants
-        self.constant_rot_differentiation = 1000
+        self.constant_rot_differentiation = 200
 
 
     ''' DATA COLLECTION '''
@@ -99,11 +101,9 @@ class Poll:
                         imptlog.append(_int)
                         if imptlog[-2] <= 3 and imptlog[-1]-imptlog[-2]>2:
                             self.intersection += 1
-                            print('intersection')
                             datalog.append([imptlog[-2],imptlog[-1]])
-                            print(imptlog)
                             self.at_intersection = True
-                            time.sleep(0.3)
+                            time.sleep(0.1)
                             self.at_intersection = False
                             imptlog = []
                 else:
@@ -129,25 +129,38 @@ class Poll:
             if self.us_deviation_log[-1] > 10.0 and dist > 25.0 and self.us_log[-2] < 25.0:
                 self.us_obstacles.append('stop' + str(kstop))
                 kstop += 1
-                print('deviation' +  str(self.us_deviation_log[-1]))
-                print('distance' + str(self.us_log[-1]))
-                print(self.us_obstacles)
+
+                '''
+                self.inters_evt.clear()
+                self._inters.join()
+                '''
                 self.obstacle_stop()
+                self.object_evt.clear()
+                self._object.join()
+                
                 self.us_log.insert(-2, 'obstacle stop')
                 self.us_deviation_log.insert(-2, 'obstacle stop')
                 self.us_log_combined.insert(-2, ('obstacle stop', 0.0, 0))
-                time.sleep(0.1)
+                # time.sleep(0.1)
             elif self.us_deviation_log[-1] < -10.0 and dist < 15.0:
                 self.us_obstacles.append('start' + str(kstart))
                 kstart += 1
-                print('deviation' +  str(self.us_deviation_log[-1]))
-                print('distance' + str(self.us_log[-1]))
-                print(self.us_obstacles)
-                self.obstacle_start()
+
+                '''
+                self.us_evt.set()
+                self._us = threading.Thread(target = self.us_poll,kwargs = {'poll_run':self.us_evt}, daemon = None)
+                self._us.start()
+                '''
+
+                self.object_evt.set()
+                self._object = threading.Thread(target = self.obstacle_start, daemon = None)
+                self._object.start()
+                # self.obstacle_start()
+
                 self.us_log.insert(-2, 'obstacle start')
                 self.us_deviation_log.insert(-2, 'obstacle start')
                 self.us_log_combined.insert(-2, ('obstacle start', 0.0, 0))
-                time.sleep(0.1)
+                # time.sleep(0.1)
             k += 1
             
  
@@ -192,23 +205,13 @@ class Poll:
         k = (kr + kl) / 2
         if not self.crosses_intersection:
             self.obstacles.append('pillar')
+            print('pillar')
         elif k >  self.constant_rot_differentiation:
             self.obstacles.append('wall')
+            print('wall')
         else:
             self.obstacles.append('car')
-        print(self.obstacles)
-
+            print('car')
+        
         self.crosses_intersection = False
         self.at_obstacle = False
-
-
-
-
-
-
-
-
-
-    
-    
-        

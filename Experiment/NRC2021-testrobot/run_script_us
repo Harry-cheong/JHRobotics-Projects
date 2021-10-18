@@ -39,7 +39,7 @@ minRef = 0
 maxRef = 90
 
 # Initialize instances
-ctrl = Navigation.Navigate(m_lock, minRef, maxRef) 
+ctrl = Navigation.Navigate(m_lock, minRef, maxRef, in_between_line = None) 
 poll = Polling.Poll(m_lock, minRef, maxRef, ctrl.rm, ctrl.lm)
 
 
@@ -51,11 +51,9 @@ while not btn.enter:
     pass
 
 
-
-
 # Start
 ctrl.runpid(0.1, 0, 1.1 ,30, target_light_intensity = 30, right_light_sensor = True, follow_right_edge = True)
-# poll.start_inters_poll(right_light_sensor = False)
+poll.start_inters_poll(right_light_sensor = False)
 poll.start_us_poll()
 
 rerun = False
@@ -63,9 +61,11 @@ while True:
     if btn.up:
         ctrl.stop_pid()
         poll.us_stop_poll()
-        print(poll.us_log)
-        print(poll.us_deviation_log)
-        print(poll.us_log_combined)
+        poll.inters_stop()
+        print(poll.obstacles)
+
+
+        '''
         final = []
         for i in poll.us_log_combined:
             try:
@@ -74,18 +74,12 @@ while True:
             except:
                 if abs(i[0]) > 10.0:
                     final.append(i)
-        rerun = True
-        print(final)
-        while True:
-            if btn.down:
-                break
-    elif rerun:
-        rerun = False
+    if btn.down:
         ctrl.runpid(0.1, 0, 1.1 ,30, target_light_intensity = 30, right_light_sensor = True, follow_right_edge = True)
-        # poll.start_inters_poll(right_light_sensor = False)
+        poll.start_inters_poll(right_light_sensor = False)
         poll.start_us_poll()
         
-
+'''
 
 
 
