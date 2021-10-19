@@ -26,6 +26,9 @@ right_ls = ColorSensor(INPUT_3)
 minRef = 0 
 maxRef = 100
 
+lls_Ref_betwline = 43
+rls_Ref_betwline = 43
+
 # Instantiate Motors
 lm = LargeMotor(OUTPUT_B)
 rm = LargeMotor(OUTPUT_C)
@@ -41,7 +44,7 @@ minRef = 0
 maxRef = 90
 
 # Initialize instances
-ctrl = Navigation.Navigate(m_lock, minRef, maxRef, in_between_line = None) 
+ctrl = Navigation.Navigate(m_lock, minRef, maxRef, lls_betw_line =  lls_Ref_betwline, rls_betw_line = rls_Ref_betwline) 
 mem = Memory.Memory()
 poll = Polling.Poll(m_lock, minRef, maxRef, ctrl.rm, ctrl.lm, mem, 40.0, 25.0, 18.0, 5.0, False, False, 70, ctrl)
 
@@ -55,7 +58,7 @@ while not btn.enter:
 
 
 # Start
-ctrl.runpid(0.1, 0, 1.1 ,30, target_light_intensity = 30, right_light_sensor = True, follow_right_edge = True)
+ctrl.runpid(0.1, 0, 1.1 ,30, right_light_sensor = True, follow_right_edge = True)
 poll.start_inters_poll(right_light_sensor = False)
 poll.start_us_poll()
 
@@ -79,16 +82,3 @@ while True:
         
 '''
 
-
-
-
-'''
-ctrl.stop_pid()
-poll.inters_stop()
-poll.us_stop()
-
-print(poll.intersection_log)
-print(poll.intersection) 
-print(poll.ls_log)
-# print(poll.us_log)
-'''
