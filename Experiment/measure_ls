@@ -23,7 +23,7 @@ leds.set_color('RIGHT', 'RED')
 while not btn.enter:
     pass
 
-leds.off()
+leds.all_off()
 screen.clear()
 time.sleep(0.5)
 
@@ -34,17 +34,17 @@ dataleft = []
 dataright = []
 
 while True:
-    if btn.up():
+    if btn.up:
         state =  1
         screen.draw.text((80,64), 'Mode 1', font = Font)
         screen.update()
     
-    elif btn.down():
+    elif btn.down:
         state = 2
         screen.draw.text((80,64), 'Mode 2', font = Font)
         screen.update()
     
-    elif btn.enter(): 
+    elif btn.enter: 
         state = 3
         screen.draw.text((80,64), 'Mode 3', font = Font)
         screen.update()

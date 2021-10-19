@@ -3,12 +3,14 @@
 from ev3dev2.motor import OUTPUT_B, OUTPUT_C, MoveTank, MoveSteering, LargeMotor, SpeedPercent
 from ev3dev2.sensor.lego import ColorSensor
 from ev3dev2.sensor import INPUT_2, INPUT_3
+from ev3dev2.led import Leds
+from ev3dev2.button import Button
 import time
 import threading
 
 class Navigate:
     
-    def __init__(self, m_lock, minRef, maxRef, in_between_line):
+    def __init__(self, m_lock, minRef, maxRef, lls_in_between_line, rls_in_between_line):
         
         # Motors
         self.lm = LargeMotor(OUTPUT_B)
@@ -25,7 +27,8 @@ class Navigate:
         self.minRef = minRef
         self.maxRef = maxRef
 
-        self.in_between_line = None 
+        self.lls_target = lls_in_between_line
+        self.rls_target = rls_in_between_line
         
         # Threading
         self.pid = threading.Event()
@@ -46,21 +49,32 @@ class Navigate:
                     pid_run = True,
                     target_light_intensity = None,
                     follow_right_edge = True,
-                    right_light_sensor = True):
+                    right_light_sensor = True):    
         
-        if target_light_intensity is None:
-            if self.in_between_line is None:
-                raise ValueError('Missing Light Value')
-            else:
-                target_light_intensity = (100 * (self.in_between_line - self.minRef ) / ( self.maxRef - self.minRef)) 
-        
-        if right_light_sensor: ls = self.rls
-        else: ls = self.lls
+        if right_light_sensor:
+            # For PID 
+            ls = self.rls
+            if target_light_intensity is None:
+                if self.rls_target is None:
+                    raise ValueError('Missing Light Value')
+                else:
+                    target_light_intensity = (100 * (self.rls_target - self.minRef ) / ( self.maxRef - self.minRef))
+           
+        else: 
+            # For PID 
+            ls = self.lls
+            if target_light_intensity is None:
+                if self.lls_target is None:
+                    raise ValueError('Missing Light Value')
+                else:
+                    target_light_intensity = (100 * (self.lls_target - self.minRef ) / ( self.maxRef - self.minRef))
         
         ls.mode = 'COL-REFLECT'
 
-        if follow_right_edge: polarity = 1
-        else: polarity = -1 
+        if follow_right_edge: 
+            polarity = 1
+        else: 
+            polarity = -1 
         
         last_error = error = integral = 0.0
         derivative = 0.0
@@ -97,43 +111,68 @@ class Navigate:
             marginoferror,
             target_light_intensity = None,
             black_white = True,
-            correction_spd = None):
+            correction_spd = None,
+            pos_beforeline = True):
 
-        if target_light_intensity is None:
-            if self.in_between_line is None:
+        if pos_beforeline:
+            polarity = 1
+        else:
+            polarity = -1
+        
+        rls_target_light_intensity = 0
+        lls_target_light_intensity = 0
+
+        if target_light_intensity is not None:
+            rls_target_light_intensity = target_light_intensity
+            lls_target_light_intensity = target_light_intensity 
+        else:
+            if type(self.rls_target) is not int or type(self.lls_target) is not int:
                 raise ValueError('Missing Light value')
             else:
-                target_light_intensity = self.in_between_line
+                rls_target_light_intensity = self.rls_target
+                lls_target_light_intensity = self.lls_target
+        
+        rls_target_black = rls_target_light_intensity - marginoferror
+        rls_target_white = rls_target_light_intensity + marginoferror
 
-        target_black = target_light_intensity - marginoferror
-        target_white = target_light_intensity + marginoferror
+        lls_target_black = lls_target_light_intensity - marginoferror
+        lls_target_white = lls_target_light_intensity + marginoferror
 
         if correction_spd is None:
             correction_spd = start_spd
         
-        forward_spd = -correction_spd
-        backward_spd = correction_spd
+        start_spd = SpeedPercent(start_spd*polarity)
+        
+        forward_spd = SpeedPercent(-correction_spd*polarity)
+        backward_spd = SpeedPercent(correction_spd*polarity)
 
         # Coarse Adjustment
-
+        
+        Leds().set_color('LEFT', 'RED')
+        Leds().set_color('RIGHT', 'RED')
+        
         while True:
-            self.movetank(start_spd)
+            self.movetank.on(start_spd,start_spd)
 
             if black_white:
 
                 # Aligning towards black Line 
 
-                if self.lls.reflected_light_intensity <= target_light_intensity:
+                if self.lls.reflected_light_intensity <= lls_target_light_intensity:
                     self.lm.off()
-                    while not self.rls.reflected_light_intensity <= target_light_intensity:
+                    while not self.rls.reflected_light_intensity <= rls_target_light_intensity:
                         self.rm.on(start_spd)
+                        # print(self.rls.reflected_light_intensity)
+                    self.rm.off()
                     break
             
                 else:
-                    if self.rls.reflected_light_intensity <= target_light_intensity:
+                    if self.rls.reflected_light_intensity <= rls_target_light_intensity:
                         self.rm.off()
-                        while not self.lls.reflected_light_intensity <= target_light_intensity:
+                        while not self.lls.reflected_light_intensity <= lls_target_light_intensity:
                             self.lm.on(start_spd)
+                            # print(self.lls.reflected_light_intensity)
+                        self.lm.off()
                         break
                     else:
                         pass
@@ -142,48 +181,66 @@ class Navigate:
 
                 # Aligning towards White Line
 
-                if self.lls.reflected_light_intensity >= target_light_intensity:
+                if self.lls.reflected_light_intensity >= lls_target_light_intensity:
                     self.lm.off()
-                    while not self.rls.reflected_light_intensity >= target_light_intensity:
+                    while not self.rls.reflected_light_intensity >= rls_target_light_intensity:
                         self.rm.on(start_spd)
+                        # print(self.rls.reflected_light_intensity)
+                    self.rm.off()
                     break
             
                 else:
-                    if self.rls.reflected_light_intensity >= target_light_intensity:
+                    if self.rls.reflected_light_intensity >= rls_target_light_intensity:
                         self.rm.off()
-                        while not self.lls.reflected_light_intensity >= target_light_intensity:
+                        while not self.lls.reflected_light_intensity >= lls_target_light_intensity:
                             self.lm.on(start_spd)
+                            # print(self.lls.reflected_light_intensity)
+                        self.lm.off()
                         break
                     else:
                         pass
 
         # Fine Adjustment
         start = time.perf_counter()
-        end = 0 
+        end = time.perf_counter()
+
+        Leds().set_color('LEFT', 'YELLOW')
+        Leds().set_color('RIGHT', 'YELLOW')
 
         while not (end - start) > maxduration:
-            if self.lls.reflected_light_intensity < target_black:
+            print(end - start)
+
+            if self.lls.reflected_light_intensity < lls_target_light_intensity:
                 self.lm.on(forward_spd)
             else:
-                if self.lls.reflected_light_intensity > target_white:
+                if self.lls.reflected_light_intensity > lls_target_light_intensity:
                     self.lm.on(backward_spd)
                 
                 else:
-                    self.lm.motor.off()
+                    self.lm.off()
             
-            if self.rls.reflected_light_intensity < target_black:
+            if self.rls.reflected_light_intensity < rls_target_light_intensity:
                 self.rm.on(forward_spd)
             else:
-                if self.rls.reflected_light_intensity > target_white:
+                if self.rls.reflected_light_intensity > rls_target_light_intensity:
                     self.rm.on(backward_spd)
                 
                 else:
-                    self.rm.motor.off()
+                    self.rm.off()
             
-            if target_black < self.lls.reflected_light_intensity < target_white and target_black < self.rls.reflected_light_intensity < target_white:
+            if lls_target_black < self.lls.reflected_light_intensity < lls_target_white and rls_target_black < self.rls.reflected_light_intensity < rls_target_white:
+                print(self.lls.reflected_light_intensity)
+                print(self.rls.reflected_light_intensity)
                 break
             
             end = time.perf_counter()
+            print(end-start)
+        
+        self.rm.off()
+        self.lm.off()
+
+        Leds().set_color('LEFT', 'GREEN')
+        Leds().set_color('RIGHT', 'GREEN')
 
     def runpid(self,
                 kp, 
@@ -197,15 +254,8 @@ class Navigate:
                 poll_intersection = True):
 
         self.intersection = False
-        k = False
-        try:
-            k = self._pid.is_alive()
-        except:
-            k = False
-        while k:
-            continue
         self.pid.set()
-        self._pid = threading.Thread(target = self.pid_follow, args = (kp,ki,kd,speed), kwargs = {'target_light_intensity' : target_light_intensity, 'follow_right_edge' : follow_right_edge, 'right_light_sensor' : right_light_sensor, 'pid_run' : self.pid}, daemon = Daemon, name="pid")
+        self._pid = threading.Thread(target = self.pid_follow, args = (kp,ki,kd,speed), kwargs = {'target_light_intensity' : target_light_intensity, 'follow_right_edge' : follow_right_edge, 'right_light_sensor' : right_light_sensor, 'pid_run' : self.pid}, daemon = Daemon)
         self._pid.start()
     
     def stop_pid(self):
