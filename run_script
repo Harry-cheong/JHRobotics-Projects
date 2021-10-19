@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pyright: reportMissingImports=false
 from ev3dev2.motor import OUTPUT_A, OUTPUT_B,OUTPUT_C, OUTPUT_D, MoveTank, MoveSteering, LargeMotor, MediumMotor, SpeedPercent
 from ev3dev2.led import Leds
 from ev3dev2.button import Button
@@ -6,14 +7,16 @@ from ev3dev2.sensor.lego import ColorSensor, UltrasonicSensor
 from ev3dev2.sensor import INPUT_1, INPUT_2, INPUT_3, INPUT_4
 from ev3dev2.sound import Sound
 import time
+import threading
 from importlib.machinery import SourceFileLoader
 
-Navigation = SourceFileLoader('Navigation', '/home/robot/Vscode.nrc2021/Navigation').load_module()
-Polling = SourceFileLoader('Polling', '/home/robot/Vscode.nrc2021/Polling').load_module()
+Navigation = SourceFileLoader('Navigation', '/home/robot/N_R_C_2_0_2_1/Modules/Navigation').load_module()
+Polling = SourceFileLoader('Polling', '/home/robot/N_R_C_2_0_2_1/Modules/Polling').load_module()
+Memory = SourceFileLoader('Memory', '/home/robot/N_R_C_2_0_2_1/Modules/Memory').load_module()
 
 # Instantiate Brick
 leds = Leds()
-buttons = Button()
+btn = Button()
 spk = Sound()
 
 # Instantiate Sensors
@@ -30,36 +33,62 @@ rm = LargeMotor(OUTPUT_C)
 steering = MoveSteering(OUTPUT_B, OUTPUT_C)
 tank = MoveTank(OUTPUT_B, OUTPUT_C)
 
+# Threading
+m_lock = threading.Lock()
+
+# Min/Max Reflective Value
+minRef = 0
+maxRef = 90
+
+# Initialize instances
+ctrl = Navigation.Navigate(m_lock, minRef, maxRef, in_between_line = None) 
+mem = Memory.Memory()
+poll = Polling.Poll(m_lock, minRef, maxRef, ctrl.rm, ctrl.lm, mem, 40.0, 25.0, 18.0, 5.0, False, False, 70, ctrl)
+
+
+
 # Start
 leds.set_color('LEFT', 'RED')
 leds.set_color('RIGHT', 'RED')
-while not buttons.enter:
+while not btn.enter:
     pass
 
-# Initialize instances
-pid = Navigation.Navigate() 
-poll = Polling.Poll(ColorSensor(INPUT_2),ColorSensor(INPUT_3), UltrasonicSensor(INPUT_4))
 
-"""
-steering.on_for_degrees(20,SpeedPercent(30),)
-"""
-
-pid.runpid(0.1, 0, 1.1 ,40, target_light_intensity = 40, right_light_sensor = True, follow_right_edge = True)
-
+# Start
+ctrl.runpid(0.1, 0, 1.1 ,30, target_light_intensity = 30, right_light_sensor = True, follow_right_edge = True)
 poll.start_inters_poll(right_light_sensor = False)
-
 poll.start_us_poll()
 
-
-while not lm.position > 1900 :
-    if poll.intersection == 3:
+rerun = False
+while True:
+    print(threading.active_count())
+    print(threading.enumerate())
+    if btn.up:
+        ctrl.stop_pid()
+        poll.us_stop_poll()
+        poll.inters_stop()
+        print(poll.obstacles)
+        print(threading.active_count())
+        print(threading.enumerate())
         break
+        '''
+    if btn.down:
+        ctrl.runpid(0.1, 0, 1.1 ,30, target_light_intensity = 30, right_light_sensor = True, follow_right_edge = True)
+        poll.start_inters_poll(right_light_sensor = False)
+        poll.start_us_poll()
+        
+'''
 
-pid.stop_pid()
+
+
+
+'''
+ctrl.stop_pid()
 poll.inters_stop()
 poll.us_stop()
 
 print(poll.intersection_log)
 print(poll.intersection) 
 print(poll.ls_log)
-#print(poll.us_log)
+# print(poll.us_log)
+'''
