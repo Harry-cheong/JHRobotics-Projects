@@ -134,7 +134,10 @@ class Storage:
             current_pos = self.pos_alignedto
         
         # reset Medium motor to mid pos
-
+        # work to be done to include motor movement
+        
+        self.pos_alignedto = None
+       
     def eject_car(self, motor_spd):
         
         proximity = []
