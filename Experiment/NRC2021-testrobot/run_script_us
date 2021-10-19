@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# pyright: reportMissingImports=false
 from ev3dev2.motor import OUTPUT_A, OUTPUT_B,OUTPUT_C, OUTPUT_D, MoveTank, MoveSteering, LargeMotor, MediumMotor, SpeedPercent
 from ev3dev2.led import Leds
 from ev3dev2.button import Button
@@ -11,6 +12,7 @@ from importlib.machinery import SourceFileLoader
 
 Navigation = SourceFileLoader('Navigation', '/home/robot/nrc2021testrobot/Navigation').load_module()
 Polling = SourceFileLoader('Polling', '/home/robot/nrc2021testrobot/Polling').load_module()
+Memory = SourceFileLoader('Memory', '/home/robot/nrc2021testrobot/Memory').load_module()
 
 # Instantiate Brick
 leds = Leds()
@@ -40,7 +42,8 @@ maxRef = 90
 
 # Initialize instances
 ctrl = Navigation.Navigate(m_lock, minRef, maxRef, in_between_line = None) 
-poll = Polling.Poll(m_lock, minRef, maxRef, ctrl.rm, ctrl.lm)
+mem = Memory.Memory()
+poll = Polling.Poll(m_lock, minRef, maxRef, ctrl.rm, ctrl.lm, mem, 40.0, 25.0, 18.0, 5.0, False, False, 70, ctrl)
 
 
 
@@ -58,22 +61,17 @@ poll.start_us_poll()
 
 rerun = False
 while True:
+    print(threading.active_count())
+    print(threading.enumerate())
     if btn.up:
         ctrl.stop_pid()
         poll.us_stop_poll()
         poll.inters_stop()
         print(poll.obstacles)
-
-
+        print(threading.active_count())
+        print(threading.enumerate())
+        break
         '''
-        final = []
-        for i in poll.us_log_combined:
-            try:
-                k = 'start' in i[0] or 'stop' in i[0]
-                final.append(i)
-            except:
-                if abs(i[0]) > 10.0:
-                    final.append(i)
     if btn.down:
         ctrl.runpid(0.1, 0, 1.1 ,30, target_light_intensity = 30, right_light_sensor = True, follow_right_edge = True)
         poll.start_inters_poll(right_light_sensor = False)
