@@ -179,9 +179,14 @@ class Poll:
                 kstart += 1
 
                 '''
-                self.us_evt.set()
-                self._us = threading.Thread(target = self.us_poll,kwargs = {'poll_run':self.us_evt}, daemon = None)
-                self._us.start()
+                THIS CODE NEEDS TO BE TESTED
+                k = False
+                try:
+                    k = self._object.is_alive()
+                except:
+                    k = False
+                while k:
+                    continue
                 '''
 
                 self.object_evt.set()
