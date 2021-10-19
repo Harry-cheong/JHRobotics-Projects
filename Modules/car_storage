@@ -12,11 +12,13 @@ btn = Button()
 leds = Leds()
 
 class Storage:
-    def __init__(self):
+    def __init__(self, memory):
+        
+        # Data Storage
         self.cars = {
-                    'R' : 0, 
-                    'B' : 0, 
-                    'G' : 0,
+                    'red' : 0, 
+                    'blue' : 0, 
+                    'green' : 0,
                     }
         
         self.pos_cars = {
@@ -39,10 +41,17 @@ class Storage:
         # Sensors
         self.ls = ColorSensor(INPUT_1)
 
-    def find_car(self, colour, left_side = False, right_side = False, type_rechargeable = False):
+        # Modules
+        self.memory = memory
+
+    def find_car(self,colour = None,left_side = False, right_side = False, type_rechargeable = False):
         
+        self.memory.current
         pos_to_check = []
         pos_poi = []
+
+        if colour is None:
+            colour = self.memory.parking_lot_data[self.memory.currentRow][self.memory.currentCol]['color']
 
         if left_side:
             pos_to_check = [1, 2, 3]
@@ -54,9 +63,9 @@ class Storage:
             pos_to_check = [1, 2, 3, 4, 5, 6]
 
 
-        if type_rechargeable and colour == 'G':
+        if type_rechargeable and colour == 'green':
             for x in pos_to_check:
-                if self.pos_cars[x] == ['G', 'R']:
+                if self.pos_cars[x] == ['green', True]:
                     pos_poi.append(x)
             
             if len(pos_poi) > 0:
@@ -65,9 +74,9 @@ class Storage:
             else:
                 return False
 
-        elif type_rechargeable and colour == 'B':
+        elif type_rechargeable and colour == 'green':
             for x in pos_to_check:
-                if self.pos_cars[x] == ['B', 'R']:
+                if self.pos_cars[x] == ['blue', True]:
                     pos_poi.append(x)
             
             if len(pos_poi) > 0:
@@ -78,10 +87,10 @@ class Storage:
         
         else:
 
-            if colour == 'R':
-                if self.cars['R'] != 0: 
+            if colour == 'red':
+                if self.cars['red'] != 0: 
                     for x in pos_to_check:
-                        if self.pos_cars[x] == ['R']:
+                        if self.pos_cars[x] == ['red']:
                             pos_poi.append(x)
                     
                     if len(pos_poi) > 0:
@@ -92,10 +101,10 @@ class Storage:
                 else:
                     return False
 
-            elif colour == 'G':
-                if self.cars['G'] != 0: 
+            elif colour == 'green':
+                if self.cars['green'] != 0: 
                     for x in pos_to_check:
-                        if self.pos_cars[x] == ['G']:
+                        if self.pos_cars[x] == ['green']:
                             pos_poi.append(x)
                     
                     if len(pos_poi) > 0:
@@ -107,10 +116,10 @@ class Storage:
                     return False
 
 
-            elif colour == 'B':
-                if self.cars['B'] != 0: 
+            elif colour == 'blue':
+                if self.cars['blue'] != 0: 
                     for x in pos_to_check:
-                        if self.pos_cars[x] == ['B']:
+                        if self.pos_cars[x] == ['blue']:
                             pos_poi.append(x)
                     
                     if len(pos_poi) > 0:
@@ -123,20 +132,6 @@ class Storage:
         
             else:
                 raise ValueError('Invalid Car Colour')
-    
-    def align_storage(self, pos):
-        # Motor coordination to align storage to the right position
-        # Include pos 1, 2, 3, 4, 5, 6 
-        self.pos_alignedto = pos
-        
-    def reset_storage(self, current_pos = None):
-        if current_pos is None:
-            current_pos = self.pos_alignedto
-        
-        # reset Medium motor to mid pos
-        # work to be done to include motor movement
-        
-        self.pos_alignedto = None
        
     def eject_car(self, motor_spd):
         
@@ -185,6 +180,37 @@ class Storage:
             raise AttributeError('No valid pos')
         
         self.pos_poi = []
-       
-    def store_car(self,colour, type_rechargeable = False):
+
+    def align_storage(self, pos):
+        
+        # align the storage to the specified pos
+        # Motor & sensor coordination to align storage to the right position
+        # Include pos 1, 2, 3, 4, 5, 6 
+        
+        # Set the pos after function ends to the pos specified for reset_storage to take over afterwards
+        self.pos_alignedto = pos 
+        
+    def reset_storage(self, current_pos = None, default = True):
+        if current_pos is None:
+            current_pos = self.pos_alignedto
+        
+        # reset the storage system to mid pos
+        # work to be done to include motor movement
+
+        self.pos_alignedto = None
+
+    def store_car(self,colour = None, type_rechargeable = False):
+        if colour is None:
+            colour = self.identify_car_colour()
+
+        # Integration with polling Module 
+        # - If a car is detected to be in the parking lot, the car is a rechargeable car and actions taken accordingly 
+        # how to store the cars in the storage need to be worked out 
+        # Update self.pos_vacant, self.cars, self.pos_cars
+
+    def identify_car_colour(self):
         pass
+        
+        # LS to detect the colour of the incoming car
+
+    
