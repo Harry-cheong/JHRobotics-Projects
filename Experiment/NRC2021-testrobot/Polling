@@ -275,3 +275,5 @@ class Poll:
         self.crosses_intersection = False
         time.sleep(0.2)
         self.at_obstacle = False
+
+        self.object_evt.clear()
