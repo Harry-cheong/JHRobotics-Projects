@@ -125,10 +125,10 @@ class Poll:
                                 print('vacant')
                                 self.nav_instance.stop_pid()
                                 self.us_stop_poll()
-                                self.inters_stop()
+                                # self.inters_stop()
                                 time.sleep(1.0)
-                                self.nav_instance.runpid(0.1, 0, 1.1 ,30, target_light_intensity = 30, right_light_sensor = True, follow_right_edge = True)
-                                self.start_inters_poll(right_light_sensor = False)
+                                self.nav_instance.runpid(0.1, 0, 1.1 ,35, target_light_intensity = 30, right_light_sensor = True, follow_right_edge = True)
+                                # self.start_inters_poll(right_light_sensor = False)
                                 self.start_us_poll()
                                 datalog.append([imptlog[-2],imptlog[-1]])
                             self.at_intersection = True
@@ -273,7 +273,7 @@ class Poll:
             self.us_stop_poll()
             self.inters_stop()
             time.sleep(1.0)
-            self.nav_instance.runpid(0.1, 0, 1.1 ,30, target_light_intensity = 30, right_light_sensor = True, follow_right_edge = True)
+            self.nav_instance.runpid(0.1, 0, 1.1 ,35, target_light_intensity = 30, right_light_sensor = True, follow_right_edge = True)
             self.start_inters_poll(right_light_sensor = False)
             self.start_us_poll()
         
