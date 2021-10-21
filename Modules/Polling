@@ -102,8 +102,6 @@ class Poll:
             reflected_light_intensity = (100 * ( ls.reflected_light_intensity - self.minRef ) / ( self.maxRef - self.minRef))
             
             _int = int(str(reflected_light_intensity)[:1])
-            
-            # log.append(_int)
 
             if _int != p_int:
                 ofvalue.append(_int)
@@ -127,7 +125,7 @@ class Poll:
                                 self.us_stop_poll()
                                 # self.inters_stop()
                                 time.sleep(1.0)
-                                self.nav_instance.runpid(0.1, 0, 1.1 ,35, target_light_intensity = 30, right_light_sensor = True, follow_right_edge = True)
+                                self.nav_instance.runpid(0.1, 0, 1.1 ,30, target_light_intensity = 30, right_light_sensor = True, follow_right_edge = True)
                                 # self.start_inters_poll(right_light_sensor = False)
                                 self.start_us_poll()
                                 datalog.append([imptlog[-2],imptlog[-1]])
@@ -140,10 +138,7 @@ class Poll:
                     imptlog.append(_int)
                 
                 p_int = _int
-        print(ofvalue) 
-        print(datalog)  
-        print(imptlog)
-        print(self.intersection)
+        print('intersections ' + str(self.intersection))
             
 
     def us_poll(self, poll_run = True):
@@ -159,27 +154,18 @@ class Poll:
             self.us_log_combined.append((self.us_deviation_log[-1], self.us_log[-1], k))
             if self.us_deviation_log[-1] > (self.us_deviation_diff/100)*prev and self.us_deviation_log[-1] > self.us_min_deviation and dist > self.us_clear_min_dist and (not(27.0 < prev < 39.0) or self.on_short_side):
                 self.us_obstacles.append('stop' + str(kstop))
-                print('stop')
                 kstop += 1
-
-                '''
-                self.inters_evt.clear()
-                self._inters.join()
-                '''
                 if self.at_obstacle:
                     self.obstacle_stop()
-                
                 self.us_log.insert(-2, 'obstacle stop')
                 self.us_deviation_log.insert(-2, 'obstacle stop')
                 self.us_log_combined.insert(-2, ('obstacle stop', 0.0, 0))
-                # time.sleep(0.1)
             elif self.us_deviation_log[-1] < (self.us_deviation_diff/100)*prev*-1 and self.us_deviation_log[-1] < self.us_min_deviation*-1 and dist < self.us_obstacle_max_dist:
-                print('start')
                 self.us_obstacles.append('start' + str(kstart))
                 kstart += 1
 
-                '''
-                THIS CODE NEEDS TO BE TESTED
+                # '''
+                # THIS CODE NEEDS TO BE TESTED
                 k = False
                 try:
                     k = self._object.is_alive()
@@ -187,17 +173,15 @@ class Poll:
                     k = False
                 while k:
                     continue
-                '''
+                # '''
 
                 self.object_evt.set()
                 self._object = threading.Thread(target = self.obstacle_start, daemon = None, name="obstacle")
                 self._object.start()
-                # self.obstacle_start()
 
                 self.us_log.insert(-2, 'obstacle start')
                 self.us_deviation_log.insert(-2, 'obstacle start')
                 self.us_log_combined.insert(-2, ('obstacle start', 0.0, 0))
-                # time.sleep(0.1)
             k += 1
             
  
@@ -257,7 +241,6 @@ class Poll:
         k = (kr + kl) / 2
 
         if not self.crosses_intersection:
-            # TODO: ADD STUFF TO MEMORY DATA
             self.obstacles.append('pillar')
             print('pillar')
             self.memory.add_pillar(self.memory.currentRow, self.memory.currentCol)
@@ -273,7 +256,7 @@ class Poll:
             self.us_stop_poll()
             self.inters_stop()
             time.sleep(1.0)
-            self.nav_instance.runpid(0.1, 0, 1.1 ,35, target_light_intensity = 30, right_light_sensor = True, follow_right_edge = True)
+            self.nav_instance.runpid(0.1, 0, 1.1 ,30, target_light_intensity = 30, right_light_sensor = True, follow_right_edge = True)
             self.start_inters_poll(right_light_sensor = False)
             self.start_us_poll()
         

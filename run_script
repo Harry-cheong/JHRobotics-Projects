@@ -58,27 +58,23 @@ while not btn.enter:
 
 
 # Start
-ctrl.runpid(0.1, 0, 1.1 ,35, right_light_sensor = True, follow_right_edge = True)
+ctrl.runpid(0.1, 0, 1.1 ,30, right_light_sensor = True, follow_right_edge = True)
 poll.start_inters_poll(right_light_sensor = False)
 poll.start_us_poll()
 
+freq = {}
+
 rerun = False
 while True:
-    print(threading.active_count())
-    print(threading.enumerate())
+    k = threading.active_count()
+    try:
+        freq[k] += 1
+    except:
+        freq[k] = 0
     if btn.up:
         ctrl.stop_pid()
         poll.us_stop_poll()
         poll.inters_stop()
         print(poll.obstacles)
-        print(threading.active_count())
-        print(threading.enumerate())
+        print(freq)
         break
-        '''
-    if btn.down:
-        ctrl.runpid(0.1, 0, 1.1 ,30, target_light_intensity = 30, right_light_sensor = True, follow_right_edge = True)
-        poll.start_inters_poll(right_light_sensor = False)
-        poll.start_us_poll()
-        
-'''
-
