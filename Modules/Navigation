@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # pyright: reportMissingImports=false
+
 from ev3dev2.motor import OUTPUT_B, OUTPUT_C, MoveTank, MoveSteering, LargeMotor, SpeedPercent
 from ev3dev2.sensor.lego import ColorSensor
 from ev3dev2.sensor import INPUT_2, INPUT_3
@@ -107,6 +108,9 @@ class Navigate:
             correction_spd = None,
             pos_beforeline = True):
 
+        self.rls.mode = 'COL-REFLECT'
+        self.lls.mode = 'COL-REFLECT'
+
         if pos_beforeline:
             polarity = 1
         else:
@@ -197,11 +201,10 @@ class Navigate:
         start = time.perf_counter()
         end = time.perf_counter()
 
-        Leds().set_color('LEFT', 'YELLOW')
-        Leds().set_color('RIGHT', 'YELLOW')
+        Leds().set_color('LEFT', 'AMBER')
+        Leds().set_color('RIGHT', 'AMBER')
 
         while not (end - start) > maxduration:
-            print(end - start)
 
             if self.lls.reflected_light_intensity < lls_target_light_intensity:
                 self.lm.on(forward_spd)
@@ -222,8 +225,6 @@ class Navigate:
                     self.rm.off()
             
             if lls_target_black < self.lls.reflected_light_intensity < lls_target_white and rls_target_black < self.rls.reflected_light_intensity < rls_target_white:
-                print(self.lls.reflected_light_intensity)
-                print(self.rls.reflected_light_intensity)
                 break
             
             end = time.perf_counter()
@@ -232,8 +233,13 @@ class Navigate:
         self.rm.off()
         self.lm.off()
 
+        print(self.lls.reflected_light_intensity)
+        print(self.rls.reflected_light_intensity)
+
         Leds().set_color('LEFT', 'GREEN')
         Leds().set_color('RIGHT', 'GREEN')
+
+        Leds().all_off()
 
     def runpid(self,
                 kp, 
