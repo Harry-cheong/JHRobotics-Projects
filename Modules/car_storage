@@ -1,0 +1,285 @@
+#!/usr/bin/env python3
+# pyright: reportMissingImports=false
+
+from ev3dev2.led import Leds
+from ev3dev2.button import Button
+from ev3dev2.sensor.lego import ColorSensor
+from ev3dev2.sensor import INPUT_1, INPUT_2, INPUT_3
+from ev3dev2.motor import MediumMotor,OUTPUT_A, OUTPUT_D, SpeedPercent # A is storage moving, D is pusher
+import time
+
+btn = Button()
+leds = Leds()
+
+class Storage:
+    def __init__(self, memory):
+        
+        # Data Storage
+        self.cars = {
+                    'red' : 0, 
+                    'blue' : 0, 
+                    'green' : 0,
+                    }
+        
+        self.pos_cars = {
+                        1 : [], 
+                        2 : [], 
+                        3 : [],
+                        4 : [],
+                        5 : [],
+                        6 : [],
+                        }
+        self.pos_vacant = [1, 2, 3, 4, 5, 6]
+        self.pos_poi = None
+        self.pos_battery = [1,3,4,6]
+        self.pos_alignedto = None
+
+        # Motors
+        self.storage_motor = MediumMotor(OUTPUT_A)
+        self.pusher_motor = MediumMotor(OUTPUT_D)
+
+        # Sensors
+        self.ls = ColorSensor(INPUT_1)
+
+        # Modules
+        self.memory = memory
+
+    def find_car(self,colour = None,left_side = False, right_side = False, type_rechargeable = False):
+        
+        self.memory.current
+        pos_to_check = []
+        pos_poi = []
+
+        if colour is None:
+            colour = self.memory.parking_lot_data[self.memory.currentRow][self.memory.currentCol]['color']
+
+        if left_side: pos_to_check = [1, 2, 3]
+        if right_side: pos_to_check = [4, 5, 6]
+        if not left_side and not right_side: pos_to_check = [1, 2, 3, 4, 5, 6]
+
+
+        if type_rechargeable and colour == 'green':
+            for x in pos_to_check:
+                if self.pos_cars[x] == ['green', True]:
+                    pos_poi.append(x)
+            
+            if len(pos_poi) > 0:
+                    self.pos_poi = pos_poi
+                    return True
+            else:
+                return False
+
+        elif type_rechargeable and colour == 'blue':
+            for x in pos_to_check:
+                if self.pos_cars[x] == ['blue', True]:
+                    pos_poi.append(x)
+            
+            if len(pos_poi) > 0:
+                    self.pos_poi = pos_poi
+                    return True
+            else:
+                return False
+        
+        else:
+
+            if colour == 'red':
+                if self.cars['red'] != 0: 
+                    for x in pos_to_check:
+                        if self.pos_cars[x] == ['red']:
+                            pos_poi.append(x)
+                    
+                    if len(pos_poi) > 0:
+                        self.pos_poi = pos_poi
+                        return True
+                    else:
+                        return False
+                else:
+                    return False
+
+            elif colour == 'green':
+                if self.cars['green'] != 0: 
+                    for x in pos_to_check:
+                        if self.pos_cars[x] == ['green']:
+                            pos_poi.append(x)
+                    
+                    if len(pos_poi) > 0:
+                        self.pos_poi = pos_poi
+                        return True
+                    else:
+                        return False
+                else:
+                    return False
+
+
+            elif colour == 'blue':
+                if self.cars['blue'] != 0: 
+                    for x in pos_to_check:
+                        if self.pos_cars[x] == ['blue']:
+                            pos_poi.append(x)
+                    
+                    if len(pos_poi) > 0:
+                        self.pos_poi = pos_poi
+                        return True
+                    else:
+                        return False
+                else:
+                    return False
+        
+            else:
+                raise ValueError('Invalid Car Colour')
+       
+    def eject_car(self,slider_spd ,pusher_spd = 100):
+        
+        proximity = []
+
+        if len(self.pos_poi) == 1:
+            self.align_storage(self.pos_poi[0], slider_spd)
+
+            self.extend_retract(pusher_spd)
+
+            self.reset_storage()
+
+        
+        elif len(self.pos_poi) > 1:
+            for x in self.pos_poi:
+                if x > 3:
+                    proximity.append(x - 4)
+                else:
+                    proximity.append(3 - x)
+
+            self.align_storage(self.pos_poi[proximity.index(min(proximity))], slider_spd)
+            # Warning if the proximity is the same, this will throw an error. However, the chances of that happening is very low. 
+            
+            self.extend_retract(pusher_spd)
+
+            self.reset_storage()
+                
+        else:
+            raise AttributeError('Invalid pos')
+        
+        self.pos_poi = []
+
+    def align_storage(self, pos, spd):
+
+        if pos <= 3: polarity = 1
+        elif pos <= 6: polarity = -1
+        else: raise ValueError('Invalid pos')
+
+        if self.pos_alignedto is None: pass
+        else: 
+            if self.pos_alignedto == pos:
+                return 
+            else:
+                self.reset_storage()
+
+        self.storage_motor.on(SpeedPercent(spd*polarity))
+        
+        self.storage_motor.on_for_degrees(SpeedPercent(spd*polarity*-1), self.ls_observe(pos))
+        self.storage_motor.off()
+
+        self.pos_alignedto = pos
+
+        # align the storage to the specified pos
+        # Motor & sensor coordination to align storage to the right position
+        # Include pos 1, 2, 3, 4, 5, 6 
+        
+        # Set the pos after function ends to the pos specified for reset_storage to take over afterwards
+        
+         
+        
+    def reset_storage(self, reset_spd):
+        
+        spd_left = reset_spd
+        spd_right = -reset_spd
+
+        current_pos = self.pos_alignedto
+
+        if current_pos is None:
+            pass
+
+        else:
+            if current_pos > 3:
+                self.storage_motor.on(SpeedPercent(spd_left))
+                self.ls_observe(align_to_mid = True)
+                self.storage_motor.off()
+            else:
+                self.storage_motor.on(SpeedPercent(spd_right))
+                self.ls_observe(align_to_mid = True)
+                self.storage_motor.off()
+
+
+        # reset the storage system to mid pos
+        # work to be done to include motor movement
+
+        self.pos_alignedto = None
+
+    def store_car(self,colour = None, type_rechargeable = False):
+        if colour is None:
+            colour = self.identify_car_colour()
+
+        # Integration with polling Module 
+        # - If a car is detected to be in the parking lot, the car is a rechargeable car and actions taken accordingly 
+        # how to store the cars in the storage need to be worked out 
+        # Update self.pos_vacant, self.cars, self.pos_cars
+
+    def identify_car_colour(self):
+        pass
+        
+        # LS to detect the colour of the incoming car
+    
+    def extend_retract(self, motor_spd, extend = True, retract = True):
+
+        if extend: 
+            self.pusher_motor.on_for_seconds(SpeedPercent(motor_spd), 1.45)    
+
+            self.pusher_motor.off()
+
+        if retract:
+            self.pusher_motor.on_for_seconds(SpeedPercent(-motor_spd), 1.4)
+            
+            self.pusher_motor.off()
+
+    def ls_observe(self, num_white_tiles, align_to_mid = False):
+        
+        self.storage_motor.position = 0
+
+        ls_data = []
+        align_data = []
+
+        p_color = None
+        white_count = 0
+
+        while True:
+            x = self.ls.color_name
+            if x != p_color:
+                ls_data.append(x)
+                p_color = x
+            
+                if not align_to_mid:
+                    if x == 'White':
+                        white_count += 1
+                        align_data.append(self.storage_motor.position, x)
+                    
+                    elif x == 'Yellow':
+                        align_data.append(self.storage_motor.position, x)
+                    
+                    elif len(ls_data) > 1 and ls_data[-2] == 'White' or 'Yellow':
+                        align_data.append(self.storage_motor.position, ls_data[-2])
+
+                    if white_count > num_white_tiles:
+                        break
+
+                if align_to_mid and x == 'Yellow':
+                    break
+        
+        # print(ls_data)
+        # print(white_count)
+        
+        if align_to_mid:
+            pass
+        else: 
+            return (abs(align_data[-1]) - abs(align_data[-2]))
+    
+
+
+    
