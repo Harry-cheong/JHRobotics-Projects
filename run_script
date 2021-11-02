@@ -51,6 +51,7 @@ poll = Polling.Poll(m_lock, minRef, maxRef, ctrl.rm, ctrl.lm, mem, 40.0, 25.0, 1
 left_ls.mode = 'COL-REFLECT'
 right_ls.mode = 'COL-REFLECT'
 
+
 # Start
 leds.set_color('LEFT', 'RED')
 leds.set_color('RIGHT', 'RED')

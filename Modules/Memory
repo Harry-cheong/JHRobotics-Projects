@@ -10,80 +10,80 @@ class Memory:
             'top': {
                 1: {
                     'color': 'red',
-                    'item':  ''
+                    'item':  'vacant'
                 },
 
                 2: {
                     'color': 'red',
-                    'item':  ''
+                    'item':  'vacant'
                 },
 
                 3: {
                     'color': 'green',
-                    'item':  ''
+                    'item':  'wall'
                 },
 
                 4: {
                     'color': 'blue',
-                    'item':  ''
+                    'item':  'vacant'
                 }
             },
             'middle': {
                 1: {
                     'color': 'green',
-                    'item':  ''
+                    'item':  'vacant'
                 },
 
                 2: {
                     'color': 'red',
-                    'item':  ''
+                    'item':  'vacant'
                 },
 
                 3: {
                     'color': 'green',
-                    'item':  ''
+                    'item':  'car'
                 },
 
                 4: {
                     'color': 'blue',
-                    'item':  ''
+                    'item':  'vacant'
                 }
             },
             'bottom': {
                 1: {
                     'color': 'blue',
-                    'item':  ''
+                    'item':  'vacant'
                 },
 
                 2: {
                     'color': 'blue',
-                    'item':  ''
+                    'item':  'car'
                 },
 
                 3: {
                     'color': 'red',
-                    'item':  ''
+                    'item':  'wall'
                 },
 
                 4: {
                     'color': 'green',
-                    'item':  ''
+                    'item':  'car'
                 }
             }
         }
 
         self.pillar_data = {
             'top': {
-                1: False,
+                1: True,
                 3: False
             },
             'middle': {
                 0: False,
-                2: False
+                2: True
             },
             'bottom': {
-                1: False,
-                4: False # ! TO BE HARDCODED
+                1: True,
+                4: False 
             }
         }
 

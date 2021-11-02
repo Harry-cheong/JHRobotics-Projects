@@ -46,7 +46,15 @@ class Storage:
         # Modules
         self.memory = memory
 
-    def find_car(self,colour = None,left_side = False, right_side = False, type_rechargeable = False):
+    def check_vacancy(self, pos_arr):
+        vacant = False
+        for i in pos_arr:
+            if i in self.pos_vacant:
+                vacant = True
+                break
+        return vacant
+
+    def find_car(self,colour = None,left_side = True, right_side = True, type_rechargeable = False):
         
         self.memory.current
         pos_to_check = []
@@ -55,9 +63,14 @@ class Storage:
         if colour is None:
             colour = self.memory.parking_lot_data[self.memory.currentRow][self.memory.currentCol]['color']
 
-        if left_side: pos_to_check = [1, 2, 3]
-        if right_side: pos_to_check = [4, 5, 6]
-        if not left_side and not right_side: pos_to_check = [1, 2, 3, 4, 5, 6]
+        if left_side:
+            pos_to_check = [1, 2, 3, 4]
+        
+        if right_side:
+            pos_to_check = [3, 4, 5, 6]
+
+        if left_side and right_side:
+            pos_to_check = [1, 2, 3, 4, 5, 6]
 
 
         if type_rechargeable and colour == 'green':
