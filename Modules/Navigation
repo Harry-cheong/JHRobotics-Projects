@@ -26,7 +26,7 @@ class Navigate:
  
         # Constants
         self.minRef = minRef
-        self.maxRef = maxRef    
+        self.maxRef = maxRef
 
         self.lls_target = lls_betw_line
         self.rls_target = rls_betw_line
@@ -34,6 +34,8 @@ class Navigate:
         # Threading
         self.pid = threading.Event()
         self.mlock = m_lock
+
+       
         
     def pid_follow(self,
                     kp,
@@ -43,10 +45,10 @@ class Navigate:
                     pid_run = True,
                     target_light_intensity = None,
                     follow_right_edge = True,
-                    right_light_sensor = True,
-                    forward = True):    
+                    right_light_sensor = True):    
         
         if right_light_sensor:
+            # For PID 
             ls = self.rls
             if target_light_intensity is None:
                 if self.rls_target is None:
@@ -54,7 +56,8 @@ class Navigate:
                 else:
                     target_light_intensity = (100 * (self.rls_target - self.minRef ) / ( self.maxRef - self.minRef))
            
-        else:
+        else: 
+            # For PID 
             ls = self.lls
             if target_light_intensity is None:
                 if self.lls_target is None:
@@ -64,14 +67,11 @@ class Navigate:
         
         ls.mode = 'COL-REFLECT'
 
-        if follow_right_edge: polarity = 1
-        else: polarity = -1 
+        if follow_right_edge: 
+            polarity = 1
+        else: 
+            polarity = -1 
         
-        if forward: pass
-        else:
-            speed = -speed
-            polarity *= -1
-
         last_error = error = integral = 0.0
         derivative = 0.0
         cycle = 0
@@ -97,7 +97,7 @@ class Navigate:
             self.steering.on(steering, SpeedPercent(speed))
             cycle += 1
 
-            # print('cycle:{c}, ref:{ref}, error:{err}, steering:{steer}, target:{target} '.format(c = cycle, ref = reflected_light_intensity, steer = round(steering,1), err = error, target = target_light_intensity))
+            # print('cycle:{c}, ref:{ref}, error:{err}, steering:{steer} '.format(c = cycle, ref = reflected_light_intensity, steer = steering, err = error))
         
         self.movetank.off()
 
@@ -108,8 +108,7 @@ class Navigate:
             target_light_intensity = None,
             black_white = True,
             correction_spd = None,
-            pos_beforeline = True,
-            coarse_only = False):
+            pos_beforeline = True):
 
         self.rls.mode = 'COL-REFLECT'
         self.lls.mode = 'COL-REFLECT'
@@ -147,6 +146,9 @@ class Navigate:
         backward_spd = SpeedPercent(correction_spd*polarity)
 
         # Coarse Adjustment
+        
+        Leds().set_color('LEFT', 'RED')
+        Leds().set_color('RIGHT', 'RED')
         
         while True:
             self.movetank.on(start_spd,start_spd)
@@ -198,39 +200,48 @@ class Navigate:
                         pass
 
         # Fine Adjustment
-        if not coarse_only:
-            start = time.perf_counter()
-            end = time.perf_counter()
+        start = time.perf_counter()
+        end = time.perf_counter()
 
-            while not (end - start) > maxduration:
+        Leds().set_color('LEFT', 'AMBER')
+        Leds().set_color('RIGHT', 'AMBER')
 
-                if self.lls.reflected_light_intensity < lls_target_light_intensity:
-                    self.lm.on(forward_spd)
+        while not (end - start) > maxduration:
+
+            if self.lls.reflected_light_intensity < lls_target_light_intensity:
+                self.lm.on(forward_spd)
+            else:
+                if self.lls.reflected_light_intensity > lls_target_light_intensity:
+                    self.lm.on(backward_spd)
+                
                 else:
-                    if self.lls.reflected_light_intensity > lls_target_light_intensity:
-                        self.lm.on(backward_spd)
-                    
-                    else:
-                        self.lm.off()
-                
-                if self.rls.reflected_light_intensity < rls_target_light_intensity:
-                    self.rm.on(forward_spd)
-                else:
-                    if self.rls.reflected_light_intensity > rls_target_light_intensity:
-                        self.rm.on(backward_spd)
-                    
-                    else:
-                        self.rm.off()
-                
-                if lls_target_black < self.lls.reflected_light_intensity < lls_target_white and rls_target_black < self.rls.reflected_light_intensity < rls_target_white:
-                    break
-                
-                end = time.perf_counter()
-                # print(end-start)
+                    self.lm.off()
             
-            self.rm.off()
-            self.lm.off()
-    
+            if self.rls.reflected_light_intensity < rls_target_light_intensity:
+                self.rm.on(forward_spd)
+            else:
+                if self.rls.reflected_light_intensity > rls_target_light_intensity:
+                    self.rm.on(backward_spd)
+                
+                else:
+                    self.rm.off()
+            
+            if lls_target_black < self.lls.reflected_light_intensity < lls_target_white and rls_target_black < self.rls.reflected_light_intensity < rls_target_white:
+                break
+            
+            end = time.perf_counter()
+            print(end-start)
+        
+        self.rm.off()
+        self.lm.off()
+
+        print(self.lls.reflected_light_intensity)
+        print(self.rls.reflected_light_intensity)
+
+        Leds().set_color('LEFT', 'GREEN')
+        Leds().set_color('RIGHT', 'GREEN')
+
+        Leds().all_off()
 
     def runpid(self,
                 kp, 
@@ -241,7 +252,7 @@ class Navigate:
                 target_light_intensity = None, 
                 follow_right_edge = True, 
                 right_light_sensor = True,
-                forward = True):
+                poll_intersection = True):
 
         self.intersection = False
         k = False
@@ -252,20 +263,43 @@ class Navigate:
         while k:
             continue
         self.pid.set()
-        self._pid = threading.Thread(target = self.pid_follow, args = (kp,ki,kd,speed), kwargs = {'target_light_intensity' : target_light_intensity, 'follow_right_edge' : follow_right_edge, 'right_light_sensor' : right_light_sensor, 'pid_run' : self.pid, 'forward': forward}, daemon = Daemon, name="pid")
+        self._pid = threading.Thread(target = self.pid_follow, args = (kp,ki,kd,speed), kwargs = {'target_light_intensity' : target_light_intensity, 'follow_right_edge' : follow_right_edge, 'right_light_sensor' : right_light_sensor, 'pid_run' : self.pid}, daemon = Daemon, name="pid")
         self._pid.start()
     
-    def turn(self, turn_spd = 40, degrees = 190, turn_right = None):
-        
+    def turn(self, turn_spd = 20, degrees = 200, turn_right = None):
         assert turn_right is not None
 
         if turn_right:
             self.steering.on_for_degrees(100, turn_spd, degrees)
         else:
-            self.steering.on_for_degrees(-100,turn_spd, degrees)
-        
-        self.steering.off()
+            self.steering.on_for_degrees(-100, turn_spd, degrees)
+    def catch_line(self,turn_spd, turn_right = None):
 
+        assert turn_right is not None
+        if turn_right:
+            self.steering.on(100, turn_spd)
+            while not self.lls.reflected_light_intensity < 10:
+                print(self.lls.reflected_light_intensity)
+            print(1)
+            while not self.lls.reflected_light_intensity > 40:
+                print(self.lls.reflected_light_intensity)
+            print(2)
+            while not self.lls.reflected_light_intensity < 40: 
+                print(self.lls.reflected_light_intensity)
+            print(3)
+            time.sleep(0.06)
+            self.steering.off()
+        else:
+            self.steering.on(-100, turn_spd)
+            while not self.lls.reflected_light_intensity < 20:
+                print(self.lls.reflected_light_intensity)
+            print(1)
+            while not self.lls.reflected_light_intensity > 40:
+                print(self.lls. reflected_light_intensity)
+            print(2)
+            while not self.lls.reflected_light_intensity < 40:
+                pass
+            self.steering.off()
     def stop_pid(self):
         self.pid.clear()
         self._pid.join()
