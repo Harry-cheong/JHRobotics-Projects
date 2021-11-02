@@ -1,0 +1,37 @@
+#!/usr/bin/env python3
+# pyright: reportMissingImports=false
+
+from ev3dev2.motor import OUTPUT_A, OUTPUT_B,OUTPUT_C, OUTPUT_D, MoveTank, MoveSteering, LargeMotor, MediumMotor, SpeedPercent
+from ev3dev2.led import Leds
+from ev3dev2.button import Button
+from ev3dev2.sensor.lego import ColorSensor, UltrasonicSensor
+from ev3dev2.sensor import INPUT_1, INPUT_2, INPUT_3, INPUT_4
+from ev3dev2.sound import Sound
+import time
+
+# Instantiate Brick
+leds = Leds()
+btn = Button()
+
+leds.all_off()
+# Instantiate Sensors
+storage_motor = MediumMotor(OUTPUT_A)
+pusher_motor = MediumMotor(OUTPUT_D)
+
+while True:
+    if btn.up:
+        storage_motor.on(50)
+        time.sleep(0.1)
+    if btn.down:
+        storage_motor.on(-50)
+        time.sleep(0.1)
+    if btn.left:
+        pusher_motor.on(50)
+        time.sleep(0.1)
+    if btn.right:
+        pusher_motor.on(-50)
+        time.sleep(0.1)
+    pusher_motor.off()
+    storage_motor.off()
+    
+    

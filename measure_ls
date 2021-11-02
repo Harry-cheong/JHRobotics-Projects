@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # pyright: reportMissingImports=false
-
+from ev3dev2.motor import OUTPUT_A, OUTPUT_B,OUTPUT_C, OUTPUT_D, MoveTank, MoveSteering, LargeMotor, MediumMotor, SpeedPercent
 from ev3dev2.led import Leds
 from ev3dev2.button import Button
 from ev3dev2.sensor.lego import ColorSensor
@@ -9,6 +9,8 @@ from ev3dev2.display import Display
 import ev3dev2.fonts as fonts
 import time
 
+lm = LargeMotor(OUTPUT_B)
+rm = LargeMotor(OUTPUT_C)
 #Sensors and Brick
 leds = Leds()
 btn = Button()

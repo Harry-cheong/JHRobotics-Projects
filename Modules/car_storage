@@ -7,12 +7,13 @@ from ev3dev2.sensor.lego import ColorSensor
 from ev3dev2.sensor import INPUT_1, INPUT_2, INPUT_3
 from ev3dev2.motor import MediumMotor,OUTPUT_A, OUTPUT_D, SpeedPercent # A is storage moving, D is pusher
 import time
+import threading
 
 btn = Button()
 leds = Leds()
 
 class Storage:
-    def __init__(self, memory):
+    def __init__(self, memory, tank):
         
         # Data Storage
         self.cars = {
@@ -37,6 +38,7 @@ class Storage:
         # Motors
         self.storage_motor = MediumMotor(OUTPUT_A)
         self.pusher_motor = MediumMotor(OUTPUT_D)
+        self.tank = tank
 
         # Sensors
         self.ls = ColorSensor(INPUT_1)
@@ -159,10 +161,14 @@ class Storage:
         
         self.pos_poi = []
 
-    def align_storage(self, pos, spd):
+    def align_storage(self, pos, spd, from_mid = True):
 
-        if pos <= 3: polarity = 1
-        elif pos <= 6: polarity = -1
+        if pos <= 3: 
+            polarity = -1
+            proximity = 4 - pos
+        elif pos <= 6: 
+            polarity = 1
+            proximity = pos - 3
         else: raise ValueError('Invalid pos')
 
         if self.pos_alignedto is None: pass
@@ -170,53 +176,60 @@ class Storage:
             if self.pos_alignedto == pos:
                 return 
             else:
-                self.reset_storage()
-
+                if from_mid:
+                    self.reset_storage(spd)
+                else:
+                    if self.pos_alignedto > pos:
+                        proximity = abs(self.pos_alignedto - pos) + 1
+                        polarity = -1
+                    elif self.pos_alignedto < pos:
+                        proximity = abs(pos - self.pos_alignedto)
+                        polarity = 1
         self.storage_motor.on(SpeedPercent(spd*polarity))
-        
-        self.storage_motor.on_for_degrees(SpeedPercent(spd*polarity*-1), self.ls_observe(pos))
-        self.storage_motor.off()
+        deg = self.ls_observe(proximity)
+
+        if pos == 1 or pos == 6:
+            deg = round(deg/2, 1)
+        else:
+            deg = round(deg/3*2, 1)
+
+        self.storage_motor.on_for_degrees(SpeedPercent(spd*polarity*-1), deg)
 
         self.pos_alignedto = pos
-
-        # align the storage to the specified pos
-        # Motor & sensor coordination to align storage to the right position
-        # Include pos 1, 2, 3, 4, 5, 6 
-        
-        # Set the pos after function ends to the pos specified for reset_storage to take over afterwards
-        
-         
         
     def reset_storage(self, reset_spd):
-        
-        spd_left = reset_spd
-        spd_right = -reset_spd
 
-        current_pos = self.pos_alignedto
+        if self.pos_alignedto <= 3: polarity = 1
+        elif self.pos_alignedto <= 6: polarity = -1
+        else: raise AttributeError('Unspecified current pos')
 
-        if current_pos is None:
-            pass
-
-        else:
-            if current_pos > 3:
-                self.storage_motor.on(SpeedPercent(spd_left))
-                self.ls_observe(align_to_mid = True)
-                self.storage_motor.off()
-            else:
-                self.storage_motor.on(SpeedPercent(spd_right))
-                self.ls_observe(align_to_mid = True)
-                self.storage_motor.off()
-
-
-        # reset the storage system to mid pos
-        # work to be done to include motor movement
+        self.storage_motor.on(SpeedPercent(reset_spd*polarity))
+        deg = self.ls_observe(0,align_to_mid = True)
+        deg = round(deg/3*2, 1)
+        self.storage_motor.on_for_degrees(SpeedPercent(reset_spd*polarity*-1), deg)
 
         self.pos_alignedto = None
 
     def store_car(self,colour = None, type_rechargeable = False):
-        if colour is None:
-            colour = self.identify_car_colour()
+        if not type_rechargeable:
+            if self.pos_alignedto is not None:
+                self.reset_storage(50)
 
+        if len(self.pos_vacant) == 6:
+            start_pos = 6
+            num_loop = 6
+        else:
+            num_loop = 1
+            
+
+        for n in range(1, num_loop + 1):
+            if n == 1:
+                self.align_storage(start_pos, 50)
+            
+            self.tank.on(10,10)
+            
+
+            
         # Integration with polling Module 
         # - If a car is detected to be in the parking lot, the car is a rechargeable car and actions taken accordingly 
         # how to store the cars in the storage need to be worked out 
@@ -228,16 +241,17 @@ class Storage:
         # LS to detect the colour of the incoming car
     
     def extend_retract(self, motor_spd, extend = True, retract = True):
-
+        
         if extend: 
-            self.pusher_motor.on_for_seconds(SpeedPercent(motor_spd), 1.45)    
-
+            self.pusher_motor.on_for_degrees(SpeedPercent(-motor_spd), 1800)
+            
             self.pusher_motor.off()
 
         if retract:
-            self.pusher_motor.on_for_seconds(SpeedPercent(-motor_spd), 1.4)
-            
+            self.pusher_motor.on_for_degrees(SpeedPercent(motor_spd), 1800)    
+
             self.pusher_motor.off()
+
 
     def ls_observe(self, num_white_tiles, align_to_mid = False):
         
@@ -254,32 +268,38 @@ class Storage:
             if x != p_color:
                 ls_data.append(x)
                 p_color = x
-            
+                
                 if not align_to_mid:
                     if x == 'White':
                         white_count += 1
-                        align_data.append(self.storage_motor.position, x)
-                    
+                        align_data.append([self.storage_motor.position, x])
+                        if white_count == num_white_tiles:
+                            self.storage_motor.off()
+                            break
+        
                     elif x == 'Yellow':
-                        align_data.append(self.storage_motor.position, x)
+                        align_data.append([self.storage_motor.position, x])
                     
-                    elif len(ls_data) > 1 and ls_data[-2] == 'White' or 'Yellow':
-                        align_data.append(self.storage_motor.position, ls_data[-2])
+                    elif len(ls_data) > 1: 
+                            if ls_data[-2] == 'White' or ls_data[-2] == 'Yellow':
+                                align_data.append([self.storage_motor.position, ls_data[-2]])
 
-                    if white_count > num_white_tiles:
-                        break
+                if align_to_mid:
+                    if x == 'Yellow':
+                        align_data.append([self.storage_motor.position, x])
+                    elif len(ls_data) > 1 and ls_data[-2] == 'Yellow':
+                            align_data.append([self.storage_motor.position, ls_data[-2]])
+                            self.storage_motor.off()
+                            break
 
-                if align_to_mid and x == 'Yellow':
-                    break
+        return abs(align_data[-1][0]) - abs(align_data[-2][0]) 
         
-        # print(ls_data)
-        # print(white_count)
-        
-        if align_to_mid:
-            pass
-        else: 
-            return (abs(align_data[-1]) - abs(align_data[-2]))
     
+    def runalign(self,pos, spd, from_mid = True):
+        self._align = threading.Thread(target = self.align_storage, args = (pos,spd,), kwargs = {'from_mid' : from_mid})
+        self._align.start()
 
-
+    def run_pusher(self,motor_spd, extend = True, retract = True):
+        self._push = threading.Thread(target = self.extend_retract, args = (motor_spd,), kwargs = {'extend':extend, 'retract':retract})
+        self._push.start()
     

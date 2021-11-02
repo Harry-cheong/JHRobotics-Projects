@@ -45,95 +45,71 @@ rls_Ref_black_white = 22
 
 ctrl = Navigation.Navigate(m_lock, minRef, maxRef, lls_Ref_black_white, rls_Ref_black_white)
 mem = Memory.Memory()
-store = Storage.Storage(mem)
+store = Storage.Storage(mem, tank)
 poll = Polling.Poll(m_lock, minRef, maxRef, ctrl.rm, ctrl.lm, mem, 40.0, 25.0, 18.0, 5.0, False, False, 70, ctrl)
 
 left_ls.mode = 'COL-REFLECT'
 right_ls.mode = 'COL-REFLECT'
-# Start
 
+# Start
 leds.set_color('LEFT', 'RED')
 leds.set_color('RIGHT', 'RED')
 print('Ready')
-
 # while not btn.enter:
 #     pass
 # leds.all_off()
 
 ## Run starts
-
 time_start = time.perf_counter()
 
 # Escape base
-tank.on_for_degrees(35, 35, 200)
-steering.on_for_seconds(100, 50, 0.25)
+tank.on_for_degrees(15, 15, 323)
+ctrl.turn(turn_right = True, turn_spd = 15, degrees = 200)
 
-
-lm.on(15)
-rm.on(15)
-time.sleep(1)
-
-while True:
-    x = left_ls.reflected_light_intensity
-    y = right_ls.reflected_light_intensity
-
-    if x > 40 : lm.off()
-    if y > 40 : rm.off()
-    if not lm.is_running and not rm.is_running: break
-
-steering.on(50, 15)
-while not left_ls.reflected_light_intensity < 10:
-    pass
-while not left_ls.reflected_light_intensity > 40:
-    pass
-while not left_ls.reflected_light_intensity < 40:
-    pass 
-steering.off()
-
-# Align to collect first 2 batteries
-ctrl.runpid(0.15, 0, 1 ,20, right_light_sensor = False, follow_right_edge = False)
-
-poll.start_inters_poll(right_light_sensor = True, object_detection = False)
-
-while True:
-    if poll.intersection == 1: 
-        break 
-
-poll.inters_stop()
-time.sleep(0.05)
-ctrl.stop_pid()
-poll.intersection = 0
-
-ctrl.runpid(0.17, 0, 1 ,15, right_light_sensor = False, follow_right_edge = False, forward = False)
-
-while not right_ls.reflected_light_intensity < 10:
-        pass
-while not right_ls.reflected_light_intensity > 40:
-    pass
-ctrl.stop_pid()
-tank.on_for_degrees(-20, -20, 75) 
-
-# Collect first 2 batteries
-ctrl.turn(turn_right = True)
-
-tank.on(-20, -20)
-while True:
-    if right_ls.reflected_light_intensity > 35 and left_ls.reflected_light_intensity > 35:
-        break # To avoid the grey zone
-
-ctrl.align(20,2,3, black_white = True, correction_spd = 10, pos_beforeline = False, target_light_intensity = 20)
-
-tank.on_for_degrees(20,20, 230) 
+# Align with line to collect first 2 batteries
+tank.on(20, 20)
+time.sleep(0.8)
 tank.off()
 
-time.sleep(2)
+ctrl.runpid(0.18, 0, 1 ,15, right_light_sensor = False, follow_right_edge = True)  
+while not right_ls.reflected_light_intensity > 35:
+    pass
 
-tank.on_for_degrees(-20,-20, 150)
+ctrl.stop_pid()
 
-ctrl.turn(turn_right = False)
+tank.on_for_degrees(-10, -10, 53)
+
+
+# Turn and collect first 2 batteries
+ctrl.turn(turn_right = True, turn_spd = 15, degrees = 199)
+tank.on(-20, -20)
+while not left_ls.reflected_light_intensity > 40:
+    pass
+tank.off()
+ctrl.align(20,2,2, black_white = True, correction_spd = 10, pos_beforeline = False)
+
+
+store.run_pusher(100, extend = False)
+store.align_storage(3,30)
+store.storage_motor.on_for_degrees(100, 120)
+
+tank.on_for_degrees(10,10, 240) 
+
+store.storage_motor.on_for_degrees(-100,120)
+store.align_storage(2,30, from_mid = False)
+
+while not btn.up:
+    pass
+store.reset_storage(30)
+while not btn.up:
+    pass
+
+tank.on_for_degrees(-20,-20, 160)
+ctrl.turn(turn_right = False, turn_spd = 20, degrees = 200)
+
 
 # Align to collect next 2 batteries
-ctrl.runpid(0.12, 0, 1 ,30, right_light_sensor = False, follow_right_edge = False)
+ctrl.runpid(0.18, 0, 1 ,15, right_light_sensor = False, follow_right_edge = False)
 
 poll.start_inters_poll(right_light_sensor = True, object_detection = False)
 
@@ -144,13 +120,12 @@ poll.inters_stop()
 time.sleep(0.15)
 ctrl.stop_pid()
 poll.intersection = 0
-
 ctrl.runpid(0.18, 0, 1 ,15, right_light_sensor = False, follow_right_edge = False, forward = False)
 
 while not right_ls.reflected_light_intensity < 10:
         pass
 ctrl.stop_pid()
-tank.on_for_degrees(20, 20, 105)
+tank.on_for_degrees(20, 20, 110)
 
 # Collect next 2 batteries
 ctrl.turn(turn_right = True)
@@ -165,41 +140,50 @@ tank.off()
 
 ctrl.align(15,2,3, black_white = True, correction_spd = 10, pos_beforeline = True)
 
+
+store.align_storage(6, 30, from_mid = False)
+store.storage_motor.on_for_degrees(-100,120)
+
+store.storage_motor.on_for_degrees(100,120)
+
 tank.on_for_degrees(20,20, 250)
 
-time.sleep(2)
+store.reset_storage(50)
 
-tank.on_for_degrees(-20,-20, 80)
+tank.on_for_degrees(-20,-20, 40)
 tank.off()
 
 # Align to collect row of cars
 
 ctrl.turn(turn_right = False)
-tank.on(-20,-20)
 
-time.sleep(0.5)
-while not left_ls.reflected_light_intensity < 10 :
+tank.on(-15,-15)
+time.sleep(0.3)
+while not left_ls.reflected_light_intensity > 40:
+    pass
+while not left_ls.reflected_light_intensity < 10:
     pass
 tank.off()
 
 tank.on(10,10)
 while not left_ls.reflected_light_intensity > 40:
     pass
-time.sleep(0.15)
-tank.off()
+tank.on_for_degrees(10,10, 18)
 
 ctrl.turn(turn_right = False)
-tank.on(20,20)
-while not right_ls.reflected_light_intensity < 10:
-    pass
-while not right_ls.reflected_light_intensity > 40:
-    pass
-tank.off()
 
-ctrl.align(15,2,3, black_white = True, correction_spd = 10, pos_beforeline = False)
+ctrl.align(20,2,3, black_white = True, correction_spd = 10, pos_beforeline = True, target_light_intensity = 20)
 
 # Collect all the car
-tank.on_for_degrees(20, 20, 1000)
+while not btn.up:
+    pass
+tank.on_for_degrees(15, 15, 900)
+
+# Align back to the line
+tank.on_for_degrees(-30, -30, 850)
+ctrl.turn(turn_right = True, turn_spd = 20, degrees = 200)
+
+# Car Parking
 
 # Caculate duration of run
 time_end = time.perf_counter()

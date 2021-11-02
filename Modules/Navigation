@@ -230,10 +230,6 @@ class Navigate:
             
             self.rm.off()
             self.lm.off()
-
-            print(self.lls.reflected_light_intensity)
-            print(self.rls.reflected_light_intensity)
-
     
 
     def runpid(self,
@@ -259,7 +255,7 @@ class Navigate:
         self._pid = threading.Thread(target = self.pid_follow, args = (kp,ki,kd,speed), kwargs = {'target_light_intensity' : target_light_intensity, 'follow_right_edge' : follow_right_edge, 'right_light_sensor' : right_light_sensor, 'pid_run' : self.pid, 'forward': forward}, daemon = Daemon, name="pid")
         self._pid.start()
     
-    def turn(self, turn_spd = 40, degrees = 200, turn_right = None):
+    def turn(self, turn_spd = 40, degrees = 190, turn_right = None):
         
         assert turn_right is not None
 
