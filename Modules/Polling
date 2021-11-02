@@ -78,6 +78,9 @@ class Poll:
         self.memory = memory
         self.nav_instance = nav_instance
 
+        self.turning = False
+        self.turn_right = None
+
 
     ''' DATA COLLECTION '''
     
@@ -120,20 +123,26 @@ class Poll:
                             if self.memory.get()[self.memory.currentRow][self.memory.currentCol]['item'] == '':
                                 self.memory.set(self.memory.currentRow, self.memory.currentCol, 'none', False)
                             if not self.at_obstacle:
-                                print('vacant')
+                                print(self.memory.get()['middle'][self.intersection])
                                 self.nav_instance.stop_pid()
-                                self.us_stop_poll()
+                                self.turning = True
+                                self.turn_right = False
+                                '''
+                                # self.us_stop_poll()
                                 # self.inters_stop()
                                 time.sleep(1.0)
-                                self.nav_instance.runpid(0.1, 0, 1.1 ,30, target_light_intensity = 30, right_light_sensor = True, follow_right_edge = True)
+                                self.nav_instance.runpid(0.1, 0, 1.1 ,30, right_light_sensor = False, follow_right_edge = False)
                                 # self.start_inters_poll(right_light_sensor = False)
-                                self.start_us_poll()
+                                # self.start_us_poll()
+                                '''
                                 datalog.append([imptlog[-2],imptlog[-1]])
+                            '''
                             self.at_intersection = True
                             time.sleep(0.3)
                             self.at_intersection = False
                             imptlog = []
                             time.sleep(0.3)
+                            '''
                 else:
                     imptlog.append(_int)
                 
@@ -141,66 +150,7 @@ class Poll:
         print('intersections ' + str(self.intersection))
             
 
-    def us_poll(self, poll_run = True):
-        kstart = 0
-        kstop = 0
-        k = 0
-        self.us_log.append(self.us.distance_centimeters)
-        while poll_run.is_set():
-            dist = round(self.us.distance_centimeters, 3)
-            prev = self.us_log[-1]
-            self.us_deviation_log.append(round(dist - self.us_log[-1], 1))
-            self.us_log.append(round(dist, 1))
-            self.us_log_combined.append((self.us_deviation_log[-1], self.us_log[-1], k))
-            if self.us_deviation_log[-1] > (self.us_deviation_diff/100)*prev and self.us_deviation_log[-1] > self.us_min_deviation and dist > self.us_clear_min_dist and (not(27.0 < prev < 39.0) or self.on_short_side):
-                self.us_obstacles.append('stop' + str(kstop))
-                kstop += 1
-                if self.at_obstacle:
-                    self.obstacle_stop()
-                self.us_log.insert(-2, 'obstacle stop')
-                self.us_deviation_log.insert(-2, 'obstacle stop')
-                self.us_log_combined.insert(-2, ('obstacle stop', 0.0, 0))
-            elif self.us_deviation_log[-1] < (self.us_deviation_diff/100)*prev*-1 and self.us_deviation_log[-1] < self.us_min_deviation*-1 and dist < self.us_obstacle_max_dist:
-                self.us_obstacles.append('start' + str(kstart))
-                kstart += 1
-
-                # '''
-                # THIS CODE NEEDS TO BE TESTED
-                k = False
-                try:
-                    k = self._object.is_alive()
-                except:
-                    k = False
-                while k:
-                    continue
-                # '''
-
-                self.object_evt.set()
-                self._object = threading.Thread(target = self.obstacle_start, daemon = None, name="obstacle")
-                self._object.start()
-
-                self.us_log.insert(-2, 'obstacle start')
-                self.us_deviation_log.insert(-2, 'obstacle start')
-                self.us_log_combined.insert(-2, ('obstacle start', 0.0, 0))
-            k += 1
-            
- 
-    def start_us_poll(self):
-        k = False
-        try:
-            k = self._us.is_alive()
-        except:
-            k = False
-        while k:
-            continue
-        self.us_evt.set()
-        self._us = threading.Thread(target = self.us_poll,kwargs = {'poll_run':self.us_evt}, daemon = None, name="us_poll")
-        self._us.start()
-
-    def us_stop_poll(self):
-        self.us_evt.clear()
-        self._us.join()
-
+    
     def start_inters_poll(self, right_light_sensor = False):
         k = False
         try:
@@ -222,46 +172,3 @@ class Poll:
         self.intersection_log = [] 
         self.intersection = 0
 
-    ''' OBSTACLE TYPE DETECTION '''
-    
-    def obstacle_start(self):
-        self.at_obstacle = True
-        self.crosses_intersection = False
-        self.start_rot_l = self.lm.position
-        self.start_rot_r = self.rm.position
-        while self.at_obstacle:
-            if self.at_intersection:
-                self.crosses_intersection = True
-                self.obstacle_stop()
-                break
-
-    def obstacle_stop(self):
-        kr = self.rm.position - self.start_rot_r
-        kl = self.lm.position - self.start_rot_l
-        k = (kr + kl) / 2
-
-        if not self.crosses_intersection:
-            self.obstacles.append('pillar')
-            print('pillar')
-            self.memory.add_pillar(self.memory.currentRow, self.memory.currentCol)
-        elif k >  self.constant_rot_differentiation:
-            self.obstacles.append('wall')
-            print('wall')
-            self.memory.set(self.memory.currentRow, self.memory.currentCol, 'wall', False)
-        else:
-            self.obstacles.append('car')
-            print('car')
-            self.memory.set(self.memory.currentRow, self.memory.currentCol, 'car', False)
-            self.nav_instance.stop_pid()
-            self.us_stop_poll()
-            self.inters_stop()
-            time.sleep(1.0)
-            self.nav_instance.runpid(0.1, 0, 1.1 ,30, target_light_intensity = 30, right_light_sensor = True, follow_right_edge = True)
-            self.start_inters_poll(right_light_sensor = False)
-            self.start_us_poll()
-        
-        self.crosses_intersection = False
-        time.sleep(0.2)
-        self.at_obstacle = False
-
-        self.object_evt.clear()

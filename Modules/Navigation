@@ -34,6 +34,8 @@ class Navigate:
         # Threading
         self.pid = threading.Event()
         self.mlock = m_lock
+
+       
         
     def pid_follow(self,
                     kp,
@@ -264,6 +266,38 @@ class Navigate:
         self._pid = threading.Thread(target = self.pid_follow, args = (kp,ki,kd,speed), kwargs = {'target_light_intensity' : target_light_intensity, 'follow_right_edge' : follow_right_edge, 'right_light_sensor' : right_light_sensor, 'pid_run' : self.pid}, daemon = Daemon, name="pid")
         self._pid.start()
     
+    def turn(self, turn_spd = 20, degrees = 195, turn_right = None):
+        assert turn_right is not None
+        print('turn')
+
+        if turn_right:
+            self.steering.on_for_degrees(100, turn_spd, degrees)
+        else:
+            self.steering.on_for_degrees(-100, turn_spd, degrees)
+    def catch_line(self,turn_spd, turn_right = None):
+
+        assert turn_right is not None
+        if turn_right:
+            self.steering.on(100, turn_spd)
+            while not self.rls.reflected_light_intensity < 20:
+                print(self.rls.reflected_light_intensity)
+            print(1)
+            while not self.rls.reflected_light_intensity > 40:
+                print(self.rls.reflected_light_intensity)
+            print(2)
+            time.sleep(0.05)
+            self.steering.off()
+        else:
+            self.steering.on(100, turn_spd)
+            while not self.lls.reflected_light_intensity < 20:
+                print(self.lls.reflected_light_intensity)
+            print(1)
+            while not self.lls.reflected_light_intensity > 40:
+                print(self.lls. reflected_light_intensity)
+            print(2)
+            while not self.lls.reflected_light_intensity < 40:
+                pass
+            self.steering.off()
     def stop_pid(self):
         self.pid.clear()
         self._pid.join()
