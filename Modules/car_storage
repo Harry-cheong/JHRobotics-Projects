@@ -17,16 +17,16 @@ class Storage:
         
         # Data Storage
         self.cars = {
-                    'red' : 0, 
+                    'red' : 1, 
                     'blue' : 0, 
-                    'green' : 1,
+                    'green' : 0,
                     }
         
         # TODO: need to change back to default
         self.pos_cars = {
-                        1 : ['green'], 
+                        1 : [], 
                         2 : [], 
-                        3 : [],
+                        3 : ['red'],
                         4 : [],
                         5 : [],
                         6 : [],
@@ -256,12 +256,12 @@ class Storage:
     def extend_retract(self, motor_spd, extend = True, retract = True):
         
         if extend: 
-            self.pusher_motor.on_for_degrees(SpeedPercent(motor_spd), 1800)
+            self.pusher_motor.on_for_degrees(SpeedPercent(-motor_spd), 1800)
             
             self.pusher_motor.off()
 
         if retract:
-            self.pusher_motor.on_for_degrees(SpeedPercent(-motor_spd), 1800)    
+            self.pusher_motor.on_for_degrees(SpeedPercent(motor_spd), 1800)    
 
             self.pusher_motor.off()
 
