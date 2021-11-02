@@ -9,7 +9,7 @@ import time
 from importlib.machinery import SourceFileLoader
 
 class Poll:
-    def __init__(self,m_lock, minRef, maxRef, rm, lm, memory, us_deviation_diff, us_obstacle_max_dist, us_clear_min_dist, us_min_deviation, on_short_side, invert_memory, constant_rot_differentiation, nav_instance):
+    def __init__(self,m_lock, minRef, maxRef, rm, lm, memory, us_deviation_diff, us_obstacle_max_dist, us_clear_min_dist, us_min_deviation, on_short_side, invert_memory, constant_rot_differentiation, nav_instance, car_storage_instance):
         ''' DATA COLLECTION '''
         #Sensors 
         self.lls = ColorSensor(INPUT_2)
@@ -77,9 +77,30 @@ class Poll:
 
         self.memory = memory
         self.nav_instance = nav_instance
+        self.car_storage_instance = car_storage_instance
 
         self.turning = False
         self.turn_right = None
+        self.slot_item = None
+        self.slot_color = None
+        self.pillar_right = None
+
+
+    ''' RUNNING AT INTERSECTION'''
+    def intersection_run(self):
+        print(self.memory.get()['middle'][self.intersection])
+        self.slot_item = self.memory.get()['middle'][self.intersection]['item']
+        self.slot_color = self.memory.get()['middle'][self.intersection]['color']
+        if self.memory.get_pillar()[self.intersection]:
+            self.pillar_right = True
+        elif self.memory.get_pillar()[self.intersection -1]:
+            self.pillar_right = False
+        else:
+            self.pillar_right = None
+        self.nav_instance.stop_pid()
+        self.turning = True
+        self.turn_right = False
+
 
 
     ''' DATA COLLECTION '''
@@ -123,10 +144,7 @@ class Poll:
                             if self.memory.get()[self.memory.currentRow][self.memory.currentCol]['item'] == '':
                                 self.memory.set(self.memory.currentRow, self.memory.currentCol, 'none', False)
                             if not self.at_obstacle:
-                                print(self.memory.get()['middle'][self.intersection])
-                                self.nav_instance.stop_pid()
-                                self.turning = True
-                                self.turn_right = False
+                                self.intersection_run()
                                 '''
                                 # self.us_stop_poll()
                                 # self.inters_stop()

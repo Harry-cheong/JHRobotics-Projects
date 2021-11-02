@@ -13,6 +13,7 @@ from importlib.machinery import SourceFileLoader
 Navigation = SourceFileLoader('Navigation', '/home/robot/N_R_C_2_0_2_1/Modules/Navigation').load_module()
 Polling = SourceFileLoader('Polling', '/home/robot/N_R_C_2_0_2_1/Modules/Polling').load_module()
 Memory = SourceFileLoader('Memory', '/home/robot/N_R_C_2_0_2_1/Modules/Memory').load_module()
+Storage = SourceFileLoader('car_storage', '/home/robot/Nrc2021/Modules/car_storage').load_module()
 
 # Instantiate Brick
 leds = Leds()
@@ -43,7 +44,8 @@ maxRef = 50
 # Initialize instances
 ctrl = Navigation.Navigate(m_lock, minRef, maxRef, lls_betw_line =  lls_Ref_betwline, rls_betw_line = rls_Ref_betwline) 
 mem = Memory.Memory()
-poll = Polling.Poll(m_lock, minRef, maxRef, ctrl.rm, ctrl.lm, mem, 40.0, 25.0, 18.0, 5.0, False, False, 70, ctrl)
+store = Storage.Storage(mem, tank)
+poll = Polling.Poll(m_lock, minRef, maxRef, ctrl.rm, ctrl.lm, mem, 40.0, 25.0, 18.0, 5.0, False, False, 70, ctrl, store)
 
 
 '''
@@ -70,8 +72,22 @@ while True:
         print('attempted turning')
         poll.inters_stop()
         ctrl.stop_pid()
-        ctrl.turn(turn_right = poll.turn_right)
-        ctrl.catch_line(20, turn_right = not poll.turn_right)
+        
+        if poll.slot_item == "car" and ((poll.pillar_right == True and store.check_vacancy([1, 2, 3, 4])) or (poll.pillar_right == False and store.check_vacancy([3, 4, 5, 6])) or poll.pillar_right == None):
+            ctrl.turn(turn_right = poll.turn_right)
+            # collect car
+            ctrl.catch_line(20, turn_right = not poll.turn_right)
+        if poll.slot_item == "vacant":
+            eject_car = False
+            if poll.pillar_right == None:
+                eject_car = store.find_car(colour=poll.slot_color, left_side = True, right_side = True)
+            else:
+                eject_car = store.find_car(colour=poll.slot_color, left_side = poll.pillar_right, right_side = not poll.pillar_right)
+            if eject_car:
+                ctrl.turn(turn_right = poll.turn_right)
+                # eject car
+                ctrl.catch_line(20, turn_right = not poll.turn_right)
+
         poll.turn_right  = None
         poll.turning = False
         ctrl.runpid(0.1, 0, 1.1 ,30, right_light_sensor = False, follow_right_edge = False)
