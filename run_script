@@ -63,7 +63,7 @@ print('Ready')
 time_start = time.perf_counter()
 
 # Escape base
-tank.on_for_degrees(15, 15, 323)
+tank.on_for_degrees(20, 20, 323)
 ctrl.turn(turn_right = True, turn_spd = 15, degrees = 200)
 
 # Align with line to collect first 2 batteries
@@ -91,12 +91,12 @@ ctrl.align(20,2,2, black_white = True, correction_spd = 10, pos_beforeline = Fal
 
 store.run_pusher(100, extend = False)
 store.align_storage(3,30)
-store.storage_motor.on_for_degrees(100, 120)
+store.storage_motor.on_for_degrees(50, 120)
 
-tank.on_for_degrees(10,10, 240) 
+tank.on_for_degrees(10,10, 245) 
 
-store.storage_motor.on_for_degrees(-100,120)
-store.align_storage(2,30, from_mid = False)
+# store.storage_motor.on_for_degrees(-30,120)
+# store.align_storage(2,30, from_mid = False)
 
 while not btn.up:
     pass
