@@ -13,7 +13,7 @@ from importlib.machinery import SourceFileLoader
 Navigation = SourceFileLoader('Navigation', '/home/robot/N_R_C_2_0_2_1/Modules/Navigation').load_module()
 Polling = SourceFileLoader('Polling', '/home/robot/N_R_C_2_0_2_1/Modules/Polling').load_module()
 Memory = SourceFileLoader('Memory', '/home/robot/N_R_C_2_0_2_1/Modules/Memory').load_module()
-Storage = SourceFileLoader('car_storage', '/home/robot/Nrc2021/Modules/car_storage').load_module()
+Storage = SourceFileLoader('car_storage', '/home/robot/N_R_C_2_0_2_1/Modules/car_storage').load_module()
 
 # Instantiate Brick
 leds = Leds()
@@ -79,13 +79,15 @@ while True:
             ctrl.catch_line(20, turn_right = not poll.turn_right)
         if poll.slot_item == "vacant":
             eject_car = False
+            print(poll.pillar_right)
             if poll.pillar_right == None:
                 eject_car = store.find_car(colour=poll.slot_color, left_side = True, right_side = True)
             else:
                 eject_car = store.find_car(colour=poll.slot_color, left_side = poll.pillar_right, right_side = not poll.pillar_right)
+            print(eject_car)
             if eject_car:
                 ctrl.turn(turn_right = poll.turn_right)
-                # eject car
+                store.eject_car(50)
                 ctrl.catch_line(20, turn_right = not poll.turn_right)
 
         poll.turn_right  = None

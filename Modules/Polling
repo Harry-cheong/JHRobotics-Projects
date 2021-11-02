@@ -91,9 +91,9 @@ class Poll:
         print(self.memory.get()['middle'][self.intersection])
         self.slot_item = self.memory.get()['middle'][self.intersection]['item']
         self.slot_color = self.memory.get()['middle'][self.intersection]['color']
-        if self.memory.get_pillar()[self.intersection]:
+        if self.memory.get_pillar()['middle'][self.intersection]:
             self.pillar_right = True
-        elif self.memory.get_pillar()[self.intersection -1]:
+        elif self.memory.get_pillar()['middle'][self.intersection -1]:
             self.pillar_right = False
         else:
             self.pillar_right = None
