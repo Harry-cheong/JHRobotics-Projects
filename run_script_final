@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # pyright: reportMissingImports=false
+# 
 from ev3dev2.motor import OUTPUT_A, OUTPUT_B,OUTPUT_C, OUTPUT_D, MoveTank, MoveSteering, LargeMotor, MediumMotor, SpeedPercent
 from ev3dev2.led import Leds
 from ev3dev2.button import Button
@@ -43,7 +44,7 @@ maxRef = 50
 
 # constants
 kp = 0.07
-kd = 1.1
+kd = 1.05
 
 # Initialize instances
 ctrl = Navigation.Navigate(m_lock, minRef, maxRef, lls_betw_line =  lls_Ref_betwline, rls_betw_line = rls_Ref_betwline) 
@@ -55,29 +56,75 @@ run_eject = False
 run_collect = False
 
 '''
-# Start
-leds.set_color('LEFT', 'RED')
-leds.set_color('RIGHT', 'RED')
-while not btn.enter:
-    pass
-'''
 
+COLLECTING CARS
+
+'''
+## Run starts
+time_start = time.perf_counter()
+
+# Escape base
+tank.on_for_degrees(20, 20, 200)
+ctrl.turn(turn_right = True, turn_spd = 15, degrees = 184)
+
+# Align with line to collect first 2 batteries
+
+tank.on(20, 20)
+time.sleep(0.8)
+
+while not right_ls.reflected_light_intensity > 35:
+    pass
+while not right_ls.reflected_light_intensity < 10:
+    pass
+while not right_ls.reflected_light_intensity > 35:
+    pass
+tank.off()
+ctrl.align(10,2.5,2, black_white = True, correction_spd = 10, pos_beforeline = False, timeout = False)
+tank.on_for_degrees(10, 10, 39)
+ctrl.turn(turn_right = False, turn_spd = 15, degrees = 184)
 store.storage_motor.on_for_degrees(-100, 90)
 store.extend_retract(100, extend = False)
 store.storage_motor.on_for_degrees(100, 90)
-store.reset_storage(30)
-time.sleep(0.5)
 
-mem.setRow("middle")
+# Collect 1st car
+store.align_storage(6, 20)
+tank.on_for_degrees(10,10,240)
+
+# # Realign
+store.align_storage(5,20, from_mid = False)
+tank.on_for_degrees(-10,-10, 120)
+ctrl.align(20,2.5,2, black_white = True, correction_spd = 10, pos_beforeline = False, timeout = False)
+
+# Collect 2nd car
+tank.on_for_degrees(10,10, 270)
+store.align_storage(4, 20)
+store.storage_motor.on_for_degrees(-10,15)
+
+# # Collect 3rd car
+tank.on_for_degrees(10,10, 100)
+
+tank.on(-20, -20)
+while right_ls.reflected_light_intensity > 15:
+    pass
+tank.off()
+ctrl.align(20,2.5,2, black_white = True, correction_spd = 10, pos_beforeline = False, timeout = False)
+steering.on_for_degrees(50, 20, 190)
+
+''' 
+
+STARTING RUN ON BOTTOM LANE
+
+'''
+
 # Start
+mem.setRow("middle")
+
 if mem.currentRow == "middle":
     ctrl.runpid(kp, 0, kd ,20, right_light_sensor = True, follow_right_edge = True)
 else:
     ctrl.runpid(kp, 0, kd, 20, right_light_sensor = False, follow_right_edge = False)
 poll.start_inters_poll(right_light_sensor = True)
 # poll.start_us_poll()
-
-
 
 
 

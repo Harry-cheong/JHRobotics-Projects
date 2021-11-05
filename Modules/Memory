@@ -143,11 +143,11 @@ class Memory:
         self.currentRow = row
     
     def changeCol(self, change):
-        if not (type(change) == int and change >= 1 and change <= 4):
+        if not (type(change) == int):
             raise ValueError("change can only be an integer")
         self.currentCol += change
         if not (type(self.currentCol) == int and self.currentCol >= 0 and self.currentCol <= 4):
-            raise ValueError("The value of change has produced an invalid column number")
+            raise ValueError("The value of change has produced an invalid column number; col" + str(self.currentCol))
     
     def setCol(self, col):
         if not (type(col) == int and col >= 0 and col <= 4):

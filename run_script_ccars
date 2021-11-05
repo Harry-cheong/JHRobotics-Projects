@@ -100,7 +100,7 @@ tank.on_for_degrees(10,10, 270)
 store.align_storage(4, 20)
 store.storage_motor.on_for_degrees(-10,15)
 
-# # Collect 3th car
+# # Collect 3rd car
 tank.on_for_degrees(10,10, 100)
 
 while not btn.up:

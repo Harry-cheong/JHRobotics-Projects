@@ -299,7 +299,7 @@ class Navigate:
                     continue
             self.lm.off()
             self.rm.off()
-            self.tank.on_for_degrees(10,10,20)
+            self.movetank.on_for_degrees(10,10,20)
         else:
             self.steering.on_for_degrees(-100, turn_spd, 200)
     def stop_pid(self):

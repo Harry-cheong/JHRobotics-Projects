@@ -88,18 +88,20 @@ class Poll:
 
     ''' RUNNING AT INTERSECTION'''
     def intersection_run(self):
-        print(self.memory.get()[self.memory.currentRow][self.intersection])
-        self.slot_item = self.memory.get()[self.memory.currentRow][self.intersection]['item']
-        self.slot_color = self.memory.get()[self.memory.currentRow][self.intersection]['color']
-        if self.memory.get_pillar()[self.memory.currentRow][self.intersection]:
-            self.pillar_right = True
-        elif self.memory.get_pillar()[self.memory.currentRow][self.intersection -1]:
-            self.pillar_right = False
+        if not self.intersection == 0:
+            print(self.memory.get()[self.memory.currentRow][self.intersection])
+            self.slot_item = self.memory.get()[self.memory.currentRow][self.intersection]['item']
+            self.slot_color = self.memory.get()[self.memory.currentRow][self.intersection]['color']
+            if self.memory.get_pillar()[self.memory.currentRow][self.intersection]:
+                self.pillar_right = True
+            elif self.memory.get_pillar()[self.memory.currentRow][self.intersection -1]:
+                self.pillar_right = False
+            else:
+                self.pillar_right = None
+            self.turning = True
+            self.turn_right = False
         else:
-            self.pillar_right = None
-        self.nav_instance.stop_pid()
-        self.turning = True
-        self.turn_right = False
+            self.turning = True
 
 
 
@@ -135,14 +137,16 @@ class Poll:
                     if grad > 2:
                         imptlog.append(_int)
                         if imptlog[-2] <= 3 and imptlog[-1]-imptlog[-2]>2:
-                            self.intersection += 1
-                            print('intersection')
                             if self.invert_memory:
+                                self.intersection = self.intersection - 1
                                 self.memory.changeCol(-1)
                             else:
+                                self.intersection = self.intersection + 1
                                 self.memory.changeCol(1)
-                            if self.memory.get()[self.memory.currentRow][self.memory.currentCol]['item'] == '':
-                                self.memory.set(self.memory.currentRow, self.memory.currentCol, 'none', False)
+                            # if not self.intersection == 0:
+                            print('intersection')
+                            print(self.intersection)
+                            print(self.invert_memory)
                             if not self.at_obstacle:
                                 self.intersection_run()
                                 '''
