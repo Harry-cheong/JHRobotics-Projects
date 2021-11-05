@@ -88,12 +88,12 @@ class Poll:
 
     ''' RUNNING AT INTERSECTION'''
     def intersection_run(self):
-        print(self.memory.get()['middle'][self.intersection])
-        self.slot_item = self.memory.get()['middle'][self.intersection]['item']
-        self.slot_color = self.memory.get()['middle'][self.intersection]['color']
-        if self.memory.get_pillar()['middle'][self.intersection]:
+        print(self.memory.get()[self.memory.currentRow][self.intersection])
+        self.slot_item = self.memory.get()[self.memory.currentRow][self.intersection]['item']
+        self.slot_color = self.memory.get()[self.memory.currentRow][self.intersection]['color']
+        if self.memory.get_pillar()[self.memory.currentRow][self.intersection]:
             self.pillar_right = True
-        elif self.memory.get_pillar()['middle'][self.intersection -1]:
+        elif self.memory.get_pillar()[self.memory.currentRow][self.intersection -1]:
             self.pillar_right = False
         else:
             self.pillar_right = None

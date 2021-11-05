@@ -166,7 +166,7 @@ class Storage:
             
             self.extend_retract(pusher_spd)
 
-            self.reset_storage(100)
+            self.reset_storage(50)
                 
         else:
             raise AttributeError('Invalid pos')

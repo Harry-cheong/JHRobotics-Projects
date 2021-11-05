@@ -47,6 +47,8 @@ mem = Memory.Memory()
 store = Storage.Storage(mem, tank)
 poll = Polling.Poll(m_lock, minRef, maxRef, ctrl.rm, ctrl.lm, mem, 40.0, 25.0, 18.0, 5.0, False, False, 70, ctrl, store)
 
+run_eject = True
+run_collect = True
 
 '''
 # Start
@@ -56,12 +58,34 @@ while not btn.enter:
     pass
 '''
 
+store.storage_motor.on_for_degrees(-100, 90)
+store.extend_retract(100, extend = False)
+store.storage_motor.on_for_degrees(100, 90)
+store.reset_storage(30)
+time.sleep(0.5)
+
 # Start
-ctrl.runpid(0.1, 0, 1.1 ,25, right_light_sensor = False, follow_right_edge = False)
+ctrl.runpid(0.07, 0, 1.1 ,20, right_light_sensor = False, follow_right_edge = False)
 poll.start_inters_poll(right_light_sensor = True)
 # poll.start_us_poll()
 
 freq = {}
+
+mem.setRow("top")
+
+def resetRobot():
+    store.reset_storage(30)
+    store.storage_motor.on_for_degrees(-100, 90)
+    store.extend_retract(100, retract = False)
+    store.storage_motor.on_for_degrees(100, 90)
+
+def pauseloop():
+    while not btn.up:
+        if btn.down:
+            resetRobot()
+        pass
+
+
 
 rerun = False
 while True:
@@ -73,11 +97,54 @@ while True:
         poll.inters_stop()
         ctrl.stop_pid()
         
-        if poll.slot_item == "car" and ((poll.pillar_right == True and store.check_vacancy([1, 2, 3, 4])) or (poll.pillar_right == False and store.check_vacancy([3, 4, 5, 6])) or poll.pillar_right == None):
-            ctrl.turn(turn_right = poll.turn_right)
+        if poll.slot_item == "car" and ((poll.pillar_right == True and store.check_vacancy([1, 2, 3, 4])) or (poll.pillar_right == False and store.check_vacancy([3, 4, 5, 6])) or poll.pillar_right == None) and run_collect:
+            tank.on_for_degrees(10, 10, 30)
+            tank.on(-10, -10)
+            while right_ls.reflected_light_intensity > 15:
+                pass
+            tank.off()
+            # pauseloop()
+            tank.on_for_degrees(10, 10, 10)
+            # pauseloop()
+            ctrl.align(10,10,2, black_white = True, correction_spd = 10, pos_beforeline = False, timeout = False)
+            # pauseloop()
+            pauseloop()
+            turning_constant = 385.5
+            if poll.turn_right:
+                if poll.pillar_right == True:
+                    steering.on_for_degrees(-75, 20, turning_constant*3*0.75)
+                else:
+                    tank.on_for_degrees(10, 10, 150)
+                    steering.on_for_degrees(-50, -20, turning_constant)
+            else:
+                if poll.pillar_right == True:
+                    steering.on_for_degrees(100, 20, turning_constant*3*0.75)
+                else:
+                    tank.on_for_degrees(10, 10, 150)
+                    steering.on_for_degrees(75, -20, turning_constant)
+            # ctrl.turn(turn_right = poll.turn_right)
+            pauseloop()
             # collect car
-            ctrl.catch_line(20, turn_right = not poll.turn_right)
-        if poll.slot_item == "vacant":
+            '''
+            def align(self,
+            start_spd,
+            maxduration,
+            marginoferror,
+            target_light_intensity = None,
+            black_white = True,
+            correction_spd = None,
+            pos_beforeline = True,
+            timeout = True):
+            '''
+            
+            # def align_storage(self, pos, spd, from_mid = True):
+            pauseloop()
+            store.align_storage(6, 30)
+            pauseloop()
+            tank.on_for_degrees(10, 10, 350)
+            pauseloop()
+            # ctrl.catch_line(20, turn_right = not poll.turn_right)
+        if poll.slot_item == "vacant" and run_eject:
             eject_car = False
             print('pillar_right' + str(poll.pillar_right))
             print('inters' + str(poll.intersection))
@@ -87,27 +154,54 @@ while True:
                 eject_car = store.find_car(colour=poll.slot_color, left_side = not poll.pillar_right, right_side = poll.pillar_right)
             print('eject_car' + str(eject_car))
             if eject_car:
-                tank.on(-10,-10)
-                while not right_ls.reflected_light_intensity < 10:
-                    pass
-                tank.off()
+                tank.on_for_degrees(10, 10, 50)
                 ctrl.turn(turn_right = poll.turn_right)
                 tank.on_for_degrees(10, 10, 35)
                 store.eject_car(25)
                 tank.on_for_degrees(-10, -10, 55)
-                ctrl.catch_line(20, turn_right = not poll.turn_right)
+                '''
+                RESET
+                '''
+                store.reset_storage(30)
+                store.storage_motor.on_for_degrees(-100, 90)
+                store.extend_retract(100, retract = False)
+                store.storage_motor.on_for_degrees(100, 90)
+                # ctrl.catch_line(20, turn_right = not poll.turn_right)
                 break
         poll.turn_right  = None
         poll.turning = False
-        ctrl.runpid(0.1, 0, 1.1 ,30, right_light_sensor = False, follow_right_edge = False)
+        ctrl.runpid(0.1, 0, 1.1 ,20, right_light_sensor = False, follow_right_edge = False)
         time.sleep(1.0)
         poll.start_inters_poll(right_light_sensor = True)
     try:
         freq[k] += 1
     except:
         freq[k] = 0
-    if btn.up or poll.intersection == 4:
+
+    if poll.intersection == 4:
+        ctrl.stop_pid()
+        poll.inters_stop()
+
+        if mem.currentRow == "top":
+            poll.invert_memory = True
+            mem.currentRow = "top"
+            run_eject = False
+            run_collect = False
+        elif mem.currentRow == "middle":
+            poll.invert_memory = True
+            mem.currentRow = "bottom"
+
+        ctrl.runpid(0.1, 0, 1.1 ,20, right_light_sensor = False, follow_right_edge = False, forward=False)
+        poll.start_inters_poll(right_light_sensor = True)
+
+
+
+    if btn.up:
         ctrl.stop_pid()
         poll.inters_stop()
         print(freq)
+        store.reset_storage(30)
+        store.storage_motor.on_for_degrees(-100, 90)
+        store.extend_retract(100, retract = False)
+        store.storage_motor.on_for_degrees(100, 90)
         break

@@ -80,7 +80,7 @@ while not right_ls.reflected_light_intensity > 35:
     pass
 tank.off()
 ctrl.align(10,2.5,2, black_white = True, correction_spd = 10, pos_beforeline = False, timeout = False)
-tank.on_for_degrees(10, 10, 41)
+tank.on_for_degrees(10, 10, 39)
 ctrl.turn(turn_right = False, turn_spd = 15, degrees = 184)
 store.storage_motor.on_for_degrees(-100, 90)
 store.extend_retract(100, extend = False)
@@ -88,23 +88,20 @@ store.storage_motor.on_for_degrees(100, 90)
 
 # Collect 1st car
 store.align_storage(6, 20)
-store.storage_motor.on_for_degrees(-20,-20, 120)
-tank.on_for_degrees(10,10,120)
-store.storage_motor.on_for_degrees(20,20, 120)
-tank.on_for_degrees(10,10,120)
+tank.on_for_degrees(10,10,240)
 
 # # Realign
-# store.align_storage(5,20, from_mid = False)
-# tank.on_for_degrees(-10,-10, 120)
-# ctrl.align(20,2.5,2, black_white = True, correction_spd = 10, pos_beforeline = False, timeout = False)
+store.align_storage(5,20, from_mid = False)
+tank.on_for_degrees(-10,-10, 120)
+ctrl.align(20,2.5,2, black_white = True, correction_spd = 10, pos_beforeline = False, timeout = False)
 
-# # Collect 2nd car
-# tank.on_for_degrees(10,10, 270)
-# store.align_storage(4, 20)
-# store.storage_motor.on_for_degrees(-10,15)
+# Collect 2nd car
+tank.on_for_degrees(10,10, 270)
+store.align_storage(4, 20)
+store.storage_motor.on_for_degrees(-10,15)
 
-# # # Collect 3th car
-# # tank.on_for_degrees(10,10, 100)
+# # Collect 3th car
+tank.on_for_degrees(10,10, 100)
 
 while not btn.up:
     pass

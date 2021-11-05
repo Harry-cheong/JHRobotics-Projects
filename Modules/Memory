@@ -11,7 +11,7 @@ class Memory:
                 1: {
                     'color': 'red',
                     'item':  'vacant'
-                },
+                },  
 
                 2: {
                     'color': 'red',
@@ -88,7 +88,10 @@ class Memory:
                 4: False #!
             },
             'bottom': {
+                0: False, #!
                 1: True,
+                2: False, #!
+                3: False, #!
                 4: False 
             }
         }
