@@ -17,7 +17,7 @@ class Storage:
         
         # Data Storage
         self.cars = {
-                    'red' : 0, 
+                    'red' : 1, 
                     'blue' : 0, 
                     'green' : 0,
                     }
@@ -28,7 +28,7 @@ class Storage:
                         3 : [],
                         4 : [],
                         5 : [],
-                        6 : [],
+                        6 : ['red'],
                         }
         self.pos_vacant = [1, 2, 3, 4, 5, 6]
         self.pos_poi = None

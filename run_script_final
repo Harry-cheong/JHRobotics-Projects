@@ -44,7 +44,7 @@ maxRef = 50
 
 # constants
 kp = 0.15
-kd = 1.10
+kd = 0.80
 
 # Initialize instances
 ctrl = Navigation.Navigate(m_lock, minRef, maxRef, lls_betw_line =  lls_Ref_betwline, rls_betw_line = rls_Ref_betwline) 
@@ -98,7 +98,10 @@ ctrl.turn(turn_right = False, turn_spd = 15, degrees = 184)
 store.storage_motor.on_for_degrees(-100, 90)
 store.extend_retract(100, extend = False)
 store.storage_motor.on_for_degrees(100, 90)
+# ! pauseloop() 
+# tank.on_for_degrees(-10, -10, 20)
 # ctrl.align(20,2.5,2, black_white = True, correction_spd = 10, pos_beforeline = False, timeout = False)
+# tank.on_for_degrees(10, 10, 20)
 
 # Collect 1st car
 store.align_storage(6, 20)
@@ -126,8 +129,8 @@ tank.off()
 print('tank off')
 ctrl.align(20,2.5,2, black_white = True, correction_spd = 10, pos_beforeline = False, timeout = False)
 tank.on_for_degrees(-20,-20, 50)
-pauseloop()
-steering.on_for_degrees(50, 20, 377)
+# ! pauseloop() 
+steering.on_for_degrees(50, 20, 382)
 
 
 ''' 
@@ -143,9 +146,10 @@ mem.currentCol = -1
 
 if mem.currentRow == "middle":
     ctrl.runpid(kp, 0, kd ,20, right_light_sensor = True, follow_right_edge = True)
+    poll.start_inters_poll(right_light_sensor = False)
 else:
     ctrl.runpid(kp, 0, kd, 20, right_light_sensor = False, follow_right_edge = False)
-poll.start_inters_poll(right_light_sensor = True)
+    poll.start_inters_poll(right_light_sensor = True)
 # poll.start_us_poll()
 
 
@@ -219,7 +223,12 @@ while True:
                 eject_car = store.find_car(colour=poll.slot_color, left_side = not poll.pillar_right, right_side = poll.pillar_right)
             print('eject_car' + str(eject_car))
             if eject_car:
-                tank.on_for_degrees(10, 10, 50)
+                if poll.pillar_right == True:
+                    tank.on_for_degrees(-10, -10, 70)
+                    tank.on_for_degrees(10, 10, 20)
+                elif poll.pillar_right == False:
+                    # tank.on_for_degrees(-10, -10, 10)
+                    tank.on_for_degrees(10, 10, 10)
                 ctrl.turn(turn_right = poll.turn_right)
                 tank.on_for_degrees(10, 10, 35)
                 store.eject_car(25)
