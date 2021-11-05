@@ -51,8 +51,8 @@ mem = Memory.Memory()
 store = Storage.Storage(mem, tank)
 poll = Polling.Poll(m_lock, minRef, maxRef, ctrl.rm, ctrl.lm, mem, 40.0, 25.0, 18.0, 5.0, False, False, 70, ctrl, store)
 
-run_eject = False
-run_collect = False
+run_eject = True
+run_collect = True
 
 '''
 # Start
@@ -68,7 +68,7 @@ store.storage_motor.on_for_degrees(100, 90)
 store.reset_storage(30)
 time.sleep(0.5)
 
-mem.setRow("middle")
+mem.setRow("top")
 # Start
 if mem.currentRow == "middle":
     ctrl.runpid(kp, 0, kd ,20, right_light_sensor = True, follow_right_edge = True)
