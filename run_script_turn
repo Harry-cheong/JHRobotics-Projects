@@ -13,6 +13,7 @@ from importlib.machinery import SourceFileLoader
 Navigation = SourceFileLoader('Navigation', '/home/robot/N_R_C_2_0_2_1/Modules/Navigation').load_module()
 Polling = SourceFileLoader('Polling', '/home/robot/N_R_C_2_0_2_1/Modules/Polling').load_module()
 Memory = SourceFileLoader('Memory', '/home/robot/N_R_C_2_0_2_1/Modules/Memory').load_module()
+Storage = SourceFileLoader('car_storage', '/home/robot/N_R_C_2_0_2_1/Modules/car_storage').load_module()
 
 # Instantiate Brick
 leds = Leds()
@@ -23,8 +24,8 @@ spk = Sound()
 left_ls = ColorSensor(INPUT_2)
 right_ls = ColorSensor(INPUT_3)
 
-lls_Ref_betwline = 27
-rls_Ref_betwline = 27
+lls_Ref_betwline = 23
+rls_Ref_betwline = 23
 
 # Instantiate Motors
 lm = LargeMotor(OUTPUT_B)
@@ -43,7 +44,8 @@ maxRef = 50
 # Initialize instances
 ctrl = Navigation.Navigate(m_lock, minRef, maxRef, lls_betw_line =  lls_Ref_betwline, rls_betw_line = rls_Ref_betwline) 
 mem = Memory.Memory()
-poll = Polling.Poll(m_lock, minRef, maxRef, ctrl.rm, ctrl.lm, mem, 40.0, 25.0, 18.0, 5.0, False, False, 70, ctrl)
+store = Storage.Storage(mem, tank)
+poll = Polling.Poll(m_lock, minRef, maxRef, ctrl.rm, ctrl.lm, mem, 40.0, 25.0, 18.0, 5.0, False, False, 70, ctrl, store)
 
 
 '''
@@ -55,7 +57,7 @@ while not btn.enter:
 '''
 
 # Start
-ctrl.runpid(0.16, 0, 1.1 ,20, right_light_sensor = False, follow_right_edge = False)
+ctrl.runpid(0.1, 0, 1.1 ,25, right_light_sensor = False, follow_right_edge = False)
 poll.start_inters_poll(right_light_sensor = True)
 # poll.start_us_poll()
 
@@ -67,9 +69,14 @@ while True:
         poll.inters_stop()
         ctrl.stop_pid()
         ctrl.turn(turn_right = poll.turn_right)
+        tank.on_for_degrees(10, 10, 35)
+        tank.on_for_degrees(-10, -10, 55)
 
         time.sleep(1)
+
+        tank.on_for_degrees(10, 10, 35)
         ctrl.catch_line(20, turn_right = not poll.turn_right)
+
         poll.turn_right  = None
         poll.turning = False
         ctrl.runpid(0.16, 0, 1.1 ,20, right_light_sensor = False, follow_right_edge = False)
