@@ -212,17 +212,6 @@ while True:
             # ctrl.turn(turn_right = poll.turn_right)
             pauseloop()
             # collect car
-            '''
-            def align(self,
-            start_spd,
-            maxduration,
-            marginoferror,
-            target_light_intensity = None,
-            black_white = True,
-            correction_spd = None,
-            pos_beforeline = True,
-            timeout = True):
-            '''
             
             # def align_storage(self, pos, spd, from_mid = True):
             pauseloop()
@@ -338,15 +327,14 @@ while True:
             time.sleep(0.6)
             poll.start_inters_poll(right_light_sensor = True)
             '''
+            break
 
-            ctrl.align(10,2.5,2, black_white = True, correction_spd = 10, pos_beforeline = False, timeout = False)
             # restarted = False
 
         elif mem.currentRow == "top":
             steering.on_for_degrees(0, -25, 190)
 
-    if btn.enter:
-        ctrl.stop_pid()
-        poll.inters_stop()
-        resetRobot()
-        break
+tank.on_for_degrees(-10,10, 20)
+ctrl.align(10,2.5,2, black_white = True, correction_spd = 10, pos_beforeline = False, timeout = False)
+steering.on_for_degrees(-100, 30, 92)
+tank.on_for_seconds(-100,-100, 1.3)
