@@ -47,6 +47,21 @@ class Storage:
         # Modules
         self.memory = memory
 
+
+    def add_car(self, color, pos):
+        try:
+            self.cars[color] += 1
+        except:
+            raise ValueError("Invalid car color")
+        self.pos_cars[pos] = [color]
+
+    def remove_car(self, pos):
+        color = self.pos_cars[pos]
+        self.pos_cars[pos] = ""
+        if self.cars[color] == 0:
+            raise RuntimeError("No such coloured car in storage system")
+        self.cars[color] -= 1
+
     def check_vacancy(self, pos_arr):
         vacant = False
         for i in pos_arr:
@@ -148,7 +163,9 @@ class Storage:
         proximity = []
 
         if len(self.pos_poi) == 1:
-            self.align_storage(self.pos_poi[0], slider_spd)
+            ejected_pos = self.pos_poi[0]
+            self.align_storage(ejected_pos, slider_spd)
+            self.remove_car(ejected_pos)
 
             self.extend_retract(pusher_spd)
 
@@ -161,8 +178,9 @@ class Storage:
                     proximity.append(x - 4)
                 else:
                     proximity.append(3 - x)
-
-            self.align_storage(self.pos_poi[proximity.index(min(proximity))], slider_spd)
+            ejected_pos = self.pos_poi[proximity.index(min(proximity))]
+            self.align_storage(ejected_pos, slider_spd)
+            self.remove_car(ejected_pos)
             # Warning if the proximity is the same, this will throw an error. However, the chances of that happening is very low. 
             
             self.extend_retract(pusher_spd)
@@ -173,6 +191,7 @@ class Storage:
             raise AttributeError('Invalid pos')
         
         self.pos_poi = []
+        
 
     def align_storage(self, pos, spd, from_mid = True):
 

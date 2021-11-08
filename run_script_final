@@ -114,27 +114,33 @@ ctrl.align(10,2.5,2, black_white = False, correction_spd = 10, pos_beforeline = 
 
 # Collect 1st car
 tank.on_for_degrees(10,10, 160)
+store.add_car('green', 4)
 
 # Collect 2nd car
 store.align_storage(5, 15, from_mid = False)
 tank.on_for_degrees(10,10, 150)
+store.add_car('red', 5)
 
 
 # # Collect 3rd car
 store.align_storage(6, 15, from_mid = False)
 tank.on_for_degrees(10,10, 150)
+store.add_car('blue', 6)
 
 # Collect 4th car
 store.align_storage(3, 15, from_mid = False)
 tank.on_for_degrees(10,10, 150)
+store.add_car('red', 3)
 
 # Collect 5th car
 store.align_storage(2, 15, from_mid = False)
 tank.on_for_degrees(10,10, 150)
+store.add_car('blue', 2)
 
 # Collect 6th car
 store.align_storage(1, 15, from_mid = False)
 tank.on_for_degrees(10,10, 150)
+store.add_car('green', 1)
 store.reset_storage(30)
 
 
@@ -236,6 +242,8 @@ while True:
             else:
                 eject_car = store.find_car(colour=poll.slot_color, left_side = not poll.pillar_right, right_side = poll.pillar_right)
             print('eject_car' + str(eject_car))
+            print(store.cars)
+            print(store.pos_cars)
             if eject_car:
                 if poll.pillar_right == True:
                     tank.on_for_degrees(-10, -10, 70)
