@@ -41,7 +41,7 @@ class Memory:
 
                 3: {
                     'color': 'green',
-                    'item':  'car'
+                    'item':  'vacant'
                 },
 
                 4: {
@@ -66,8 +66,8 @@ class Memory:
                 },
 
                 4: {
-                    'color': 'green',
-                    'item':  'car'
+                    'color': 'red',
+                    'item':  'vacant'
                 }
             }
         }
