@@ -78,6 +78,12 @@ def pauseloop():
 COLLECTING CARS
 
 '''
+leds.set_color('LEFT', 'RED')
+leds.set_color('RIGHT', 'RED')
+print('Ready')  
+while not btn.enter:
+    pass
+leds.all_off()
 
 ## Run starts
 time_start = time.perf_counter()
@@ -125,13 +131,14 @@ store.add_car('red', 5)
 # # Collect 3rd car
 store.align_storage(6, 15, from_mid = False)
 tank.on_for_degrees(10,10, 150)
-store.add_car('blue', 6)
-
+store.add_car('blue', 1)
+'''
 # Collect 4th car
 store.align_storage(3, 15, from_mid = False)
 tank.on_for_degrees(10,10, 150)
 store.add_car('red', 3)
-
+'''
+'''
 # Collect 5th car
 store.align_storage(2, 15, from_mid = False)
 tank.on_for_degrees(10,10, 150)
@@ -141,7 +148,9 @@ store.add_car('blue', 2)
 store.align_storage(1, 15, from_mid = False)
 tank.on_for_degrees(10,10, 150)
 store.add_car('green', 1)
+'''
 store.reset_storage(30)
+
 
 
 # Return to line
@@ -212,6 +221,17 @@ while True:
             # ctrl.turn(turn_right = poll.turn_right)
             pauseloop()
             # collect car
+            '''
+            def align(self,
+            start_spd,
+            maxduration,
+            marginoferror,
+            target_light_intensity = None,
+            black_white = True,
+            correction_spd = None,
+            pos_beforeline = True,
+            timeout = True):
+            '''
             
             # def align_storage(self, pos, spd, from_mid = True):
             pauseloop()
@@ -244,12 +264,15 @@ while True:
                 tank.on_for_degrees(10, 10, 35)
                 store.eject_car(25)
                 tank.on_for_degrees(-10, -10, 40)
-                pauseloop()
+                # pauseloop()
                 ctrl.turn(turn_right = not poll.turn_right)
                 ctrl.align(10,1,2, black_white = True, correction_spd = 10, pos_beforeline = False, timeout = True)
-                pauseloop()
+                # pauseloop()
         poll.turn_right  = None
         poll.turning = False
+
+
+
 
         # Continue 
         if mem.currentRow == "bottom" or mem.currentRow == "middle":
@@ -296,7 +319,6 @@ while True:
         poll.inters_stop()
 
         if mem.currentRow == "bottom":
-            '''
             # Move Robot from bottom/middle row to top/middle row
             pauseloop()
             steering.on_for_degrees(-50, 20, 380)
@@ -326,10 +348,10 @@ while True:
             ctrl.runpid(fwd_kp, 0, fwd_kd ,fwd_pid_spd, right_light_sensor = False, follow_right_edge = False, forward=True)
             time.sleep(0.6)
             poll.start_inters_poll(right_light_sensor = True)
-            '''
+
             break
 
-            # restarted = False
+        # restarted = False
 
         elif mem.currentRow == "top":
             steering.on_for_degrees(0, -25, 190)

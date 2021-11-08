@@ -108,7 +108,7 @@ class Poll:
     ''' DATA COLLECTION '''
     
     def inters_poll(self, right_light_sensor, poll_run = True):
-        
+        time.sleep(0.7)
         if right_light_sensor:
             ls = self.rls       
         else: 

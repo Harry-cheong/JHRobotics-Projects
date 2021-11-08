@@ -43,8 +43,8 @@ minRef = 0
 maxRef = 50
 
 # backward PID constants
-fwd_kp = 0.31
-fwd_kd = 0.60
+fwd_kp = 0.35
+fwd_kd = 0.52
 fwd_pid_spd = 20
 
 # forward PID constants
@@ -111,8 +111,8 @@ store.align_storage(4, 20)
 
 tank.on_for_degrees(10,10, 46)
 ctrl.align(10,2.5,2, black_white = False, correction_spd = 10, pos_beforeline = True, timeout = False)
-'''
 
+'''
 # Collect 1st car
 # tank.on_for_degrees(10,10, 160)
 store.add_car('green', 4)
@@ -167,7 +167,7 @@ mem.setRow("middle")
 
 if mem.currentRow == "middle":
     ctrl.runpid(fwd_kp, 0, fwd_kd ,fwd_pid_spd, right_light_sensor = True, follow_right_edge = True, scaling = False)
-    time.sleep(2.0)
+    time.sleep(1.3+0.5)
     poll.start_inters_poll(right_light_sensor = False)
 
 # poll.start_us_poll()
@@ -182,7 +182,7 @@ while True:
         print('poll.turning ran')
         poll.inters_stop()
         ctrl.stop_pid()
-
+        '''
         # Charged Car
         if poll.slot_item == "car" and ((poll.pillar_right == True and store.check_vacancy([1, 2, 3, 4])) or (poll.pillar_right == False and store.check_vacancy([3, 4, 5, 6])) or poll.pillar_right == None) and run_collect:
             
@@ -194,7 +194,7 @@ while True:
             tank.off()
             tank.on_for_degrees(10, 10, 10)
             ctrl.align(10,10,2, black_white = True, correction_spd = 10, pos_beforeline = False, timeout = False)
-            pauseloop()
+            # pauseloop()
 
             # Turn 
             turning_constant = 385.5
@@ -211,9 +211,9 @@ while True:
                     tank.on_for_degrees(10, 10, 150)
                     steering.on_for_degrees(75, -20, turning_constant)
             # ctrl.turn(turn_right = poll.turn_right)
-            pauseloop()
+            # pauseloop()
             # collect car
-            '''
+
             def align(self,
             start_spd,
             maxduration,
@@ -223,17 +223,21 @@ while True:
             correction_spd = None,
             pos_beforeline = True,
             timeout = True):
-            '''
+
             
             # def align_storage(self, pos, spd, from_mid = True):
-            pauseloop()
+            # pauseloop()
             store.align_storage(6, 30)
-            pauseloop()
+            # pauseloop()
             tank.on_for_degrees(10, 10, 350)
-            pauseloop()
+            # pauseloop()
             # ctrl.catch_line(20, turn_right = not poll.turn_right)
-
+        '''
         # Vacant 
+        try:
+            poll.inters_stop()
+        except:
+            print('inters stopped')
         if poll.slot_item == "vacant" and run_eject:
             eject_car = False
             print('pillar_right' + str(poll.pillar_right))
@@ -243,23 +247,32 @@ while True:
             else:
                 eject_car = store.find_car(colour=poll.slot_color, left_side = not poll.pillar_right, right_side = poll.pillar_right)
             print('eject_car' + str(eject_car))
-            print(store.cars)
-            print(store.pos_cars)
             if eject_car:
                 if poll.pillar_right == True:
                     tank.on_for_degrees(-10, -10, 70)
                     tank.on_for_degrees(10, 10, 20)
+                    print('pillar right')
                 elif poll.pillar_right == False:
                     # tank.on_for_degrees(-10, -10, 10)
-                    tank.on_for_degrees(10, 10, 10)
-                ctrl.turn(turn_right = poll.turn_right)
+                    tank.on_for_degrees(10, 10, 40)
+                    print('pillar left')
+                elif poll.pillar_right == True:
+                    tank.on_for_degrees(10, 10, 20)
+                if not poll.invert_memory:
+                    ctrl.turn(turn_right = poll.turn_right)
+                else:
+                    ctrl.turn(turn_right = not poll.turn_right)
+                
                 tank.on_for_degrees(10, 10, 35)
                 store.eject_car(25)
-                tank.on_for_degrees(-10, -10, 40)
-                pauseloop()
+                tank.on_for_degrees(-10, -10, 45)
+                # pauseloop()
                 ctrl.turn(turn_right = not poll.turn_right)
-                ctrl.align(10,1,2, black_white = True, correction_spd = 10, pos_beforeline = False, timeout = True)
                 pauseloop()
+                ctrl.align(10,1,2, black_white = True, correction_spd = 10, pos_beforeline = False, timeout = True)
+                # pauseloop()
+                print(store.cars)
+                print(store.pos_cars)
         poll.turn_right  = None
         poll.turning = False
 
@@ -269,8 +282,9 @@ while True:
                 ctrl.runpid(bwd_kp, 0, bwd_kd ,bwd_pid_spd, right_light_sensor = True, follow_right_edge = True, forward= False, scaling = False)
             else:
                 ctrl.runpid(fwd_kp, 0, fwd_kd ,fwd_pid_spd, right_light_sensor = True, follow_right_edge = True, forward = True, scaling = False)
-            time.sleep(1)
-            poll.start_inters_poll(right_light_sensor = False)
+            time.sleep(0.4)
+            poll.start_inters_poll(right_light_sensor = False) #!
+            print('inters poll started')
 
         
         elif mem.currentRow == "top":
@@ -283,7 +297,7 @@ while True:
 
     if poll.intersection == 4 and not restarted:
         poll.inters_stop()
-        time.sleep(1)
+        time.sleep(0.5)
         ctrl.stop_pid()
         poll.intersection = poll.intersection + 1
         mem.changeCol(1)
@@ -303,12 +317,12 @@ while True:
             ctrl.runpid(bwd_kp, 0, bwd_kd ,bwd_pid_spd, right_light_sensor = True, follow_right_edge = True, forward = False, scaling = False)
             poll.start_inters_poll(right_light_sensor = False)
 
-    if poll.intersection == 0 and poll.invert_memory:
+    if poll.intersection == -1 and poll.invert_memory:
         ctrl.stop_pid()
         poll.inters_stop()
 
         if mem.currentRow == "bottom":
-            
+            '''
             # Move Robot from bottom/middle row to top/middle row
             pauseloop()
             steering.on_for_degrees(-50, 20, 380)
@@ -338,13 +352,15 @@ while True:
             ctrl.runpid(fwd_kp, 0, fwd_kd ,fwd_pid_spd, right_light_sensor = False, follow_right_edge = False, forward=True)
             time.sleep(0.6)
             poll.start_inters_poll(right_light_sensor = True)
+            '''
+            break
 
-            restarted = False
+        # restarted = False
+
         elif mem.currentRow == "top":
             steering.on_for_degrees(0, -25, 190)
 
-    if btn.enter:
-        ctrl.stop_pid()
-        poll.inters_stop()
-        resetRobot()
-        break
+tank.on_for_degrees(-10,10, 20)
+ctrl.align(10,2.5,2, black_white = True, correction_spd = 10, pos_beforeline = False, timeout = False)
+steering.on_for_degrees(-100, 30, 92)
+tank.on_for_seconds(-100,-100, 1.3)
