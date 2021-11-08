@@ -17,7 +17,7 @@ class Storage:
         
         # Data Storage
         self.cars = {
-                    'red' : 1, 
+                    'red' : 0, 
                     'blue' : 0, 
                     'green' : 0,
                     }
@@ -28,7 +28,7 @@ class Storage:
                         3 : [],
                         4 : [],
                         5 : [],
-                        6 : ['red'],
+                        6 : [],
                         }
         self.initial_cars = ['green', 'red', 'blue', 'red', 'blue', 'green']
         self.pos_vacant = [1, 2, 3, 4, 5, 6]
