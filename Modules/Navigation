@@ -35,7 +35,7 @@ class Navigate:
         self.pid = threading.Event()
         self.mlock = m_lock
 
-       
+        self.at_intersection = False
         
     def pid_follow(self,
                     kp,
@@ -46,7 +46,8 @@ class Navigate:
                     target_light_intensity = None,
                     follow_right_edge = True,
                     right_light_sensor = True,
-                    forward = True):    
+                    forward = True,
+                    scaling = True):    
         
         if right_light_sensor:
             # For PID 
@@ -55,8 +56,10 @@ class Navigate:
                 if self.rls_target is None:
                     raise ValueError('Missing Light Value')
                 else:
-                    target_light_intensity = (100 * (self.rls_target - self.minRef ) / ( self.maxRef - self.minRef))
-           
+                    if scaling:
+                        target_light_intensity = (100 * (self.rls_target - self.minRef ) / ( self.maxRef - self.minRef))
+                    else:
+                        target_light_intensity = self.rls_target
         else: 
             # For PID 
             ls = self.lls
@@ -64,7 +67,11 @@ class Navigate:
                 if self.lls_target is None:
                     raise ValueError('Missing Light Value')
                 else:
-                    target_light_intensity = (100 * (self.lls_target - self.minRef ) / ( self.maxRef - self.minRef))
+                    if scaling:
+                        target_light_intensity = (100 * (self.lls_target - self.minRef ) / ( self.maxRef - self.minRef))
+                    else:
+                        target_light_intensity = self.lls_target
+                    
         
         ls.mode = 'COL-REFLECT'
 
@@ -79,11 +86,13 @@ class Navigate:
 
         if not forward:
             speed *= -1
-            polarity *= -1
+            polarity *= 1
 
         while pid_run.is_set():
-            
-            reflected_light_intensity = (100 * ( ls.reflected_light_intensity - self.minRef ) / ( self.maxRef - self.minRef))
+            if scaling:
+                reflected_light_intensity = (100 * ( ls.reflected_light_intensity - self.minRef ) / ( self.maxRef - self.minRef))
+            else:
+                reflected_light_intensity = ls.reflected_light_intensity
             error = target_light_intensity - reflected_light_intensity
 
             if error == 0:
@@ -95,15 +104,15 @@ class Navigate:
                 derivative = error - last_error
             last_error = error
 
-            steering = (kp * error) + (ki * integral) + (kd * derivative)
-            steering *= polarity
-            
-            
+            if not self.at_intersection:
+                steering = (kp * error) + (ki * integral) + (kd * derivative)
+            else:
+                steering = 0
+
             self.steering.on(steering, SpeedPercent(speed))
             cycle += 1
 
-            # print('cycle:{c}, ref:{ref}, error:{err}, steering:{steer} '.format(c = cycle, ref = reflected_light_intensity, steer = steering, err = error))
-        
+            print('cycle:{c}, ref:{ref}, error:{err}, steering:{steer} '.format(c = cycle, ref = reflected_light_intensity, steer = steering, err = error))
         self.movetank.off()
 
     def align(self,
@@ -260,7 +269,8 @@ class Navigate:
                 target_light_intensity = None, 
                 follow_right_edge = True, 
                 right_light_sensor = True,
-                forward = True):
+                forward = True,
+                scaling = True):
 
         self.intersection = False
         k = False
@@ -271,7 +281,7 @@ class Navigate:
         while k:
             continue
         self.pid.set()
-        self._pid = threading.Thread(target = self.pid_follow, args = (kp,ki,kd,speed), kwargs = {'target_light_intensity' : target_light_intensity, 'follow_right_edge' : follow_right_edge, 'right_light_sensor' : right_light_sensor, 'pid_run' : self.pid, 'forward':forward}, daemon = Daemon, name="pid")
+        self._pid = threading.Thread(target = self.pid_follow, args = (kp,ki,kd,speed), kwargs = {'target_light_intensity' : target_light_intensity, 'follow_right_edge' : follow_right_edge, 'right_light_sensor' : right_light_sensor, 'pid_run' : self.pid, 'forward':forward, 'scaling':scaling}, daemon = Daemon, name="pid")
         self._pid.start()
     
     def turn(self, turn_spd = 20, degrees = 185, turn_right = None):
@@ -281,6 +291,7 @@ class Navigate:
             self.steering.on_for_degrees(100, turn_spd, degrees)
         else:
             self.steering.on_for_degrees(-100, turn_spd, degrees)
+    
     def catch_line(self,turn_spd, turn_right = None):
 
         assert turn_right is not None

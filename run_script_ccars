@@ -51,6 +51,17 @@ poll = Polling.Poll(m_lock, minRef, maxRef, ctrl.rm, ctrl.lm, mem, 40.0, 25.0, 1
 left_ls.mode = 'COL-REFLECT'
 right_ls.mode = 'COL-REFLECT'
 
+def resetRobot():
+    store.reset_storage(30)
+    store.storage_motor.on_for_degrees(-100, 90)
+    store.extend_retract(100, retract = False)
+    store.storage_motor.on_for_degrees(100, 90)
+
+def pauseloop():
+    while not btn.up:
+        if btn.down:
+            resetRobot()
+        pass
 
 # Start
 leds.set_color('LEFT', 'RED')
@@ -65,7 +76,7 @@ time_start = time.perf_counter()
 
 # Escape base
 tank.on_for_degrees(20, 20, 200)
-ctrl.turn(turn_right = True, turn_spd = 15, degrees = 184)
+ctrl.turn(turn_right = True, turn_spd = 13, degrees = 184)
 
 # Align with line to collect first 2 batteries
 
@@ -80,34 +91,43 @@ while not right_ls.reflected_light_intensity > 35:
     pass
 tank.off()
 ctrl.align(10,2.5,2, black_white = True, correction_spd = 10, pos_beforeline = False, timeout = False)
-tank.on_for_degrees(10, 10, 39)
-ctrl.turn(turn_right = False, turn_spd = 15, degrees = 184)
+tank.on_for_degrees(10, 10, 40)
+
+ctrl.turn(turn_right = False, turn_spd = 13, degrees = 184)
+
 store.storage_motor.on_for_degrees(-100, 90)
 store.extend_retract(100, extend = False)
 store.storage_motor.on_for_degrees(100, 90)
 
-# Collect 1st car
 store.align_storage(6, 20)
-tank.on_for_degrees(10,10,240)
+tank.on_for_degrees(10,10, 60)
+ctrl.align(10,2.5,2, black_white = False, correction_spd = 10, pos_beforeline = True, timeout = False)
 
-# # Realign
-store.align_storage(5,20, from_mid = False)
-tank.on_for_degrees(-10,-10, 120)
-ctrl.align(20,2.5,2, black_white = True, correction_spd = 10, pos_beforeline = False, timeout = False)
+
+# Collect 1st car
+tank.on_for_degrees(10,10, 160)
 
 # Collect 2nd car
-tank.on_for_degrees(10,10, 270)
-store.align_storage(4, 20)
-store.storage_motor.on_for_degrees(-10,15)
+store.align_storage(5, 15, from_mid = False)
+tank.on_for_degrees(10,10, 148)
+
 
 # # Collect 3rd car
-tank.on_for_degrees(10,10, 100)
+store.align_storage(4, 15, from_mid = False)
+tank.on_for_degrees(10,10, 148)
 
-while not btn.up:
-    pass
-store.reset_storage(30)
-store.storage_motor.on_for_degrees(-100, 90)
-store.extend_retract(100, retract = False)
-store.storage_motor.on_for_degrees(100, 90)
-while not btn.up:
-    pass
+# Collect 4th car
+store.align_storage(3, 15, from_mid = False)
+tank.on_for_degrees(10,10, 148)
+
+# Collect 5th car
+store.align_storage(2, 15, from_mid = False)
+tank.on_for_degrees(10,10, 148)
+
+pauseloop()
+# Collect 6th car
+store.align_storage(1, 15, from_mid = False)
+tank.on_for_degrees(10,10, 148)
+
+pauseloop()
+

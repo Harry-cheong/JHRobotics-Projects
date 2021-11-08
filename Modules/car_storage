@@ -198,7 +198,7 @@ class Storage:
                         proximity = abs(pos - self.pos_alignedto) + 1
                         polarity = 1
         self.storage_motor.on(SpeedPercent(spd*polarity))
-        deg = self.ls_observe(proximity)
+        deg = self.ls_observe(proximity, from_mid = from_mid)
         deg = round(deg/3*2, 1)
         self.storage_motor.on_for_degrees(SpeedPercent(spd*polarity*-1), deg)
 
@@ -219,31 +219,6 @@ class Storage:
 
         self.pos_alignedto = None
 
-    def store_car(self,colour = None, type_rechargeable = False):
-        if not type_rechargeable:
-            if self.pos_alignedto is not None:
-                self.reset_storage(50)
-
-        if len(self.pos_vacant) == 6:
-            start_pos = 6
-            num_loop = 6
-        else:
-            num_loop = 1
-            
-
-        for n in range(1, num_loop + 1):
-            if n == 1:
-                self.align_storage(start_pos, 50)
-            
-            self.tank.on(10,10)
-            
-
-            
-        # Integration with polling Module 
-        # - If a car is detected to be in the parking lot, the car is a rechargeable car and actions taken accordingly 
-        # how to store the cars in the storage need to be worked out 
-        # Update self.pos_vacant, self.cars, self.pos_cars
-
     def identify_car_colour(self):
         pass
         
@@ -262,7 +237,7 @@ class Storage:
             self.pusher_motor.off()
 
 
-    def ls_observe(self, num_white_tiles, align_to_mid = False):
+    def ls_observe(self, num_white_tiles, from_mid = True, align_to_mid = False):
         
         self.storage_motor.position = 0
 
@@ -288,6 +263,11 @@ class Storage:
         
                     elif x == 'Yellow':
                         align_data.append([self.storage_motor.position, x])
+                        if not from_mid:
+                            white_count += 1
+                            if white_count == num_white_tiles:
+                                self.storage_motor.off()
+                                break
                     
                     elif len(ls_data) > 1: 
                             if ls_data[-2] == 'White' or ls_data[-2] == 'Yellow':

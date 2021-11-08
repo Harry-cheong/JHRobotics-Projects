@@ -42,7 +42,7 @@ class Poll:
         self.on_short_side = on_short_side
         self.us_min_deviation = us_min_deviation
         self.invert_memory = invert_memory
-
+        
         # Logging
         self.ls_log = []
         
@@ -134,9 +134,14 @@ class Poll:
 
                 if len(imptlog)>1:
                     grad = abs(_int-imptlog[-1])
+                    if _int <= 3:
+                        self.nav_instance.at_intersection = True
+                    else:
+                        self.nav_instance.at_intersection = False
                     if grad > 2:
                         imptlog.append(_int)
-                        if imptlog[-2] <= 3 and imptlog[-1]-imptlog[-2]>2:
+
+                        if imptlog[-2] <= 3 and imptlog[-1] - imptlog[-2]>2:
                             if self.invert_memory:
                                 self.intersection = self.intersection - 1
                                 self.memory.changeCol(-1)

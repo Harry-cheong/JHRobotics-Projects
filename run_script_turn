@@ -41,6 +41,11 @@ m_lock = threading.Lock()
 minRef = 0
 maxRef = 50
 
+# constants
+kp = 0.23
+kd = 0.25
+pid_spd = 25
+
 # Initialize instances
 ctrl = Navigation.Navigate(m_lock, minRef, maxRef, lls_betw_line =  lls_Ref_betwline, rls_betw_line = rls_Ref_betwline) 
 mem = Memory.Memory()
@@ -48,42 +53,137 @@ store = Storage.Storage(mem, tank)
 poll = Polling.Poll(m_lock, minRef, maxRef, ctrl.rm, ctrl.lm, mem, 40.0, 25.0, 18.0, 5.0, False, False, 70, ctrl, store)
 
 
-'''
 # Start
 leds.set_color('LEFT', 'RED')
 leds.set_color('RIGHT', 'RED')
 while not btn.enter:
     pass
-'''
+
+
+def resetRobot():
+    store.reset_storage(30)
+    store.storage_motor.on_for_degrees(-100, 90)
+    store.extend_retract(100, retract = False)
+    store.storage_motor.on_for_degrees(100, 90)
+
+def pauseloop():
+    while not btn.up:
+        if btn.down:
+            resetRobot()
+        pass
+run_eject = False
+run_collect = False
 
 # Start
-ctrl.runpid(0.1, 0, 1.1 ,25, right_light_sensor = False, follow_right_edge = False)
-poll.start_inters_poll(right_light_sensor = True)
+mem.setRow("middle")
+poll.intersection = -1
+mem.currentCol = -1
+
+if mem.currentRow == "middle":
+    ctrl.runpid(kp, 0, kd ,pid_spd, right_light_sensor = True, follow_right_edge = True, scaling = False)
+    poll.start_inters_poll(right_light_sensor = False)
+
 # poll.start_us_poll()
 
-freq = {}
-
+restarted = False
+turn_at_0inters = True
+temp = 0
 rerun = False
+
 while True:
     if poll.turning:
+        print('poll.turning ran')
+        restarted = False
         poll.inters_stop()
         ctrl.stop_pid()
-        ctrl.turn(turn_right = poll.turn_right)
-        tank.on_for_degrees(10, 10, 35)
-        tank.on_for_degrees(-10, -10, 55)
+        
+        # Charged Car
+        if poll.slot_item == "car" and ((poll.pillar_right == True and store.check_vacancy([1, 2, 3, 4])) or (poll.pillar_right == False and store.check_vacancy([3, 4, 5, 6])) or poll.pillar_right == None) and run_collect:
+            
+            # Align horizontally to intersection
+            tank.on_for_degrees(10, 10, 30)
+            tank.on(-10, -10)
+            while not right_ls.reflected_light_intensity < 15:
+                pass
+            tank.off()
+            tank.on_for_degrees(10, 10, 10)
+            ctrl.align(10,10,2, black_white = True, correction_spd = 10, pos_beforeline = False, timeout = False)
+            pauseloop()
 
-        time.sleep(1)
+            # Turn 
+            turning_constant = 385.5
+            if poll.turn_right:
+                if poll.pillar_right == True:
+                    steering.on_for_degrees(-75, 20, turning_constant*3*0.75)
+                else:
+                    tank.on_for_degrees(10, 10, 150)
+                    steering.on_for_degrees(-50, -20, turning_constant)
+            else:
+                if poll.pillar_right == True:
+                    steering.on_for_degrees(100, 20, turning_constant*3*0.75)
+                else:
+                    tank.on_for_degrees(10, 10, 150)
+                    steering.on_for_degrees(75, -20, turning_constant)
+            # ctrl.turn(turn_right = poll.turn_right)
+            pauseloop()
+            # collect car
+            '''
+            def align(self,
+            start_spd,
+            maxduration,
+            marginoferror,
+            target_light_intensity = None,
+            black_white = True,
+            correction_spd = None,
+            pos_beforeline = True,
+            timeout = True):
+            '''
+            
+            # def align_storage(self, pos, spd, from_mid = True):
+            pauseloop()
+            store.align_storage(6, 30)
+            pauseloop()
+            tank.on_for_degrees(10, 10, 350)
+            pauseloop()
+            # ctrl.catch_line(20, turn_right = not poll.turn_right)
 
-        tank.on_for_degrees(10, 10, 35)
-        ctrl.catch_line(20, turn_right = not poll.turn_right)
-
+        # Vacant 
+        if poll.slot_item == "vacant" and run_eject:
+            eject_car = False
+            print('pillar_right' + str(poll.pillar_right))
+            print('inters' + str(poll.intersection))
+            if poll.pillar_right == None:
+                eject_car = store.find_car(colour=poll.slot_color, left_side = True, right_side = True)
+            else:
+                eject_car = store.find_car(colour=poll.slot_color, left_side = not poll.pillar_right, right_side = poll.pillar_right)
+            print('eject_car' + str(eject_car))
+            if eject_car:
+                if poll.pillar_right == True:
+                    tank.on_for_degrees(-10, -10, 70)
+                    tank.on_for_degrees(10, 10, 20)
+                elif poll.pillar_right == False:
+                    # tank.on_for_degrees(-10, -10, 10)
+                    tank.on_for_degrees(10, 10, 10)
+                ctrl.turn(turn_right = poll.turn_right)
+                tank.on_for_degrees(10, 10, 35)
+                store.eject_car(25)
+                tank.on_for_degrees(-10, -10, 55)
+                pauseloop()
+                ctrl.catch_line(20, turn_right = not poll.turn_right)
+                pauseloop()
         poll.turn_right  = None
         poll.turning = False
-        ctrl.runpid(0.16, 0, 1.1 ,20, right_light_sensor = False, follow_right_edge = False)
-        poll.start_inters_poll(right_light_sensor = True)
 
-    if btn.up or poll.intersection == 4:
+        # Continue 
+        if poll.invert_memory:
+            ctrl.runpid(kp, 0, kd ,pid_spd, right_light_sensor = True, follow_right_edge = True, forward=False, scaling = False)
+        else:
+            ctrl.runpid(kp, 0, kd ,pid_spd, right_light_sensor = True, follow_right_edge = True, forward = True, scaling = False)
+        time.sleep(1.0)
+        poll.start_inters_poll(right_light_sensor = False)
+    
+    if poll.intersection == 4 and not restarted:
+        restarted = True
+        print('pid stopped')
         ctrl.stop_pid()
         poll.inters_stop()
-        print(freq)
-        break
