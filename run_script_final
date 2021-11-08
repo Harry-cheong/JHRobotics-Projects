@@ -246,7 +246,6 @@ while True:
                 store.eject_car(25)
                 tank.on_for_degrees(-10, -10, 55)
                 pauseloop()
-                # ctrl.catch_line(20, turn_right = not poll.turn_right)
                 ctrl.turn(turn_right = not poll.turn_right)
                 ctrl.align(10,1,2, black_white = True, correction_spd = 10, pos_beforeline = False, timeout = True)
                 pauseloop()

@@ -76,7 +76,7 @@ time_start = time.perf_counter()
 
 # Escape base
 tank.on_for_degrees(20, 20, 200)
-ctrl.turn(turn_right = True, turn_spd = 13, degrees = 184)
+ctrl.turn(turn_right = True, turn_spd = 15, degrees = 184)
 
 # Align with line to collect first 2 batteries
 
@@ -91,43 +91,45 @@ while not right_ls.reflected_light_intensity > 35:
     pass
 tank.off()
 ctrl.align(10,2.5,2, black_white = True, correction_spd = 10, pos_beforeline = False, timeout = False)
-tank.on_for_degrees(10, 10, 40)
+tank.on_for_degrees(10, 10, 39)
 
-ctrl.turn(turn_right = False, turn_spd = 13, degrees = 184)
+ctrl.turn(turn_right =False, turn_spd = 13, degrees = 187)
 
 store.storage_motor.on_for_degrees(-100, 90)
 store.extend_retract(100, extend = False)
 store.storage_motor.on_for_degrees(100, 90)
+store.align_storage(4, 20)
 
-store.align_storage(6, 20)
-tank.on_for_degrees(10,10, 60)
+tank.on_for_degrees(10,10, 46)
 ctrl.align(10,2.5,2, black_white = False, correction_spd = 10, pos_beforeline = True, timeout = False)
 
 
 # Collect 1st car
 tank.on_for_degrees(10,10, 160)
+pauseloop()
 
 # Collect 2nd car
 store.align_storage(5, 15, from_mid = False)
-tank.on_for_degrees(10,10, 148)
+tank.on_for_degrees(10,10, 150)
 
 
 # # Collect 3rd car
-store.align_storage(4, 15, from_mid = False)
-tank.on_for_degrees(10,10, 148)
+store.align_storage(6, 15, from_mid = False)
+tank.on_for_degrees(10,10, 150)
 
 # Collect 4th car
 store.align_storage(3, 15, from_mid = False)
-tank.on_for_degrees(10,10, 148)
+tank.on_for_degrees(10,10, 150)
 
 # Collect 5th car
 store.align_storage(2, 15, from_mid = False)
-tank.on_for_degrees(10,10, 148)
+tank.on_for_degrees(10,10, 150)
 
 pauseloop()
 # Collect 6th car
 store.align_storage(1, 15, from_mid = False)
-tank.on_for_degrees(10,10, 148)
+tank.on_for_degrees(10,10, 150)
+store.reset_storage(30)
 
 pauseloop()
 
