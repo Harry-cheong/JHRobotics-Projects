@@ -112,7 +112,7 @@ class Navigate:
             self.steering.on(steering, SpeedPercent(speed))
             cycle += 1
 
-            print('cycle:{c}, ref:{ref}, error:{err}, steering:{steer} '.format(c = cycle, ref = reflected_light_intensity, steer = steering, err = error))
+            # print('cycle:{c}, ref:{ref}, error:{err}, steering:{steer} '.format(c = cycle, ref = reflected_light_intensity, steer = steering, err = error))
         self.movetank.off()
 
     def align(self,

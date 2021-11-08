@@ -88,7 +88,7 @@ class Poll:
 
     ''' RUNNING AT INTERSECTION'''
     def intersection_run(self):
-        if not self.intersection == 0:
+        if not self.intersection == 0 and not self.intersection == 5:
             print(self.memory.get()[self.memory.currentRow][self.intersection])
             self.slot_item = self.memory.get()[self.memory.currentRow][self.intersection]['item']
             self.slot_color = self.memory.get()[self.memory.currentRow][self.intersection]['color']

@@ -44,7 +44,7 @@ maxRef = 50
 
 # backward PID constants
 fwd_kp = 0.31
-fwd_kd = 0.65
+fwd_kd = 0.60
 fwd_pid_spd = 20
 
 # forward PID constants
@@ -58,7 +58,7 @@ mem = Memory.Memory()
 store = Storage.Storage(mem, tank)
 poll = Polling.Poll(m_lock, minRef, maxRef, ctrl.rm, ctrl.lm, mem, 40.0, 25.0, 18.0, 5.0, False, False, 70, ctrl, store)
 
-run_eject = False
+run_eject = True
 run_collect = False
 
 def resetRobot():
@@ -137,6 +137,9 @@ store.align_storage(1, 15, from_mid = False)
 tank.on_for_degrees(10,10, 148)
 store.reset_storage(30)
 '''
+store.storage_motor.on_for_degrees(-100, 90)
+store.extend_retract(100, extend = False)
+store.storage_motor.on_for_degrees(100, 90)
 
 # Return to line
 tank.on(-20, -20)
@@ -154,11 +157,13 @@ STARTING RUN ON BOTTOM LANE
 '''
 
 # Start
+
+
 mem.setRow("middle")
 
 if mem.currentRow == "middle":
     ctrl.runpid(fwd_kp, 0, fwd_kd ,fwd_pid_spd, right_light_sensor = True, follow_right_edge = True, scaling = False)
-    time.sleep(1.5)
+    time.sleep(2.0)
     poll.start_inters_poll(right_light_sensor = False)
 
 # poll.start_us_poll()
@@ -244,7 +249,7 @@ while True:
                 ctrl.turn(turn_right = poll.turn_right)
                 tank.on_for_degrees(10, 10, 35)
                 store.eject_car(25)
-                tank.on_for_degrees(-10, -10, 55)
+                tank.on_for_degrees(-10, -10, 40)
                 pauseloop()
                 ctrl.turn(turn_right = not poll.turn_right)
                 ctrl.align(10,1,2, black_white = True, correction_spd = 10, pos_beforeline = False, timeout = True)
@@ -271,12 +276,14 @@ while True:
             poll.start_inters_poll(right_light_sensor = True)
 
     if poll.intersection == 4 and not restarted:
+        poll.inters_stop()
+        time.sleep(1)
+        ctrl.stop_pid()
         poll.intersection = poll.intersection + 1
         mem.changeCol(1)
         restarted = True
         print('pid stopped')
-        ctrl.stop_pid()
-        poll.inters_stop()
+        
 
         if mem.currentRow == "top":
             poll.invert_memory = True
