@@ -102,7 +102,7 @@ class Memory:
 
     def set(self, row, col, item, returnData = False):
         # row can be 'top', 'middle', or 'bottom'
-        # col can be an integer from -1 to 4
+        # col can be an integer from -1 to 5
         if row == None:
             row = self.currentRow
         if col == None:
@@ -110,8 +110,8 @@ class Memory:
 
         if not (row == 'top' or row == 'middle' or row == 'bottom'):
             raise ValueError("row can only be 'top', 'middle', or 'bottom'")
-        if not (type(col) == int and col >= -1 and col <= 4):
-            raise ValueError("col can only be an integer from -1 to 4")
+        if not (type(col) == int and col >= -1 and col <= 5):
+            raise ValueError("col can only be an integer from -1 to 5")
         
         self.parking_lot_data[row][col]['item'] = item
 
@@ -126,8 +126,8 @@ class Memory:
 
         if not (row == 'top' or row == 'middle' or row == 'bottom'):
             raise ValueError("row can only be 'top', 'middle', or 'bottom'")
-        if not (type(col) == int and col >= -1 and col <= 4):
-            raise ValueError("col can only be an integer from -1 to 4")
+        if not (type(col) == int and col >= -1 and col <= 5):
+            raise ValueError("col can only be an integer from -1 to 5")
         self.pillar_data[row][col] = True
 
     def get(self):
@@ -146,11 +146,11 @@ class Memory:
         if not (type(change) == int):
             raise ValueError("change can only be an integer")
         self.currentCol += change
-        if not (type(self.currentCol) == int and self.currentCol >= -1 and self.currentCol <= 4):
+        if not (type(self.currentCol) == int and self.currentCol >= -1 and self.currentCol <= 5):
             raise ValueError("The value of change has produced an invalid column number; col" + str(self.currentCol))
     
     def setCol(self, col):
-        if not (type(col) == int and col >= -1 and col <= 4):
-            raise ValueError("col can only be an integer from -1 to 4")
+        if not (type(col) == int and col >= -1 and col <= 5):
+            raise ValueError("col can only be an integer from -1 to 5")
         self.currentCol = col
         

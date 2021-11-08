@@ -292,27 +292,7 @@ class Navigate:
         else:
             self.steering.on_for_degrees(-100, turn_spd, degrees)
     
-    def catch_line(self,turn_spd, turn_right = None):
-
-        assert turn_right is not None
-        if turn_right:
-            self.steering.on_for_degrees(100, turn_spd, 200)
-            print(self.lls.reflected_light_intensity)
-
-            while not abs(self.lls.reflected_light_intensity - self.lls_target) == 2:
-                if self.lls.reflected_light_intensity > self.lls_target:
-                    self.rm.off()
-                    self.lm.on(-10)
-                    continue 
-                if self.lls.reflected_light_intensity < self.lls_target:
-                    self.lm.off()
-                    self.rm.on(-10)
-                    continue
-            self.lm.off()
-            self.rm.off()
-            self.movetank.on_for_degrees(10,10,20)
-        else:
-            self.steering.on_for_degrees(-100, turn_spd, 200)
+   
     def stop_pid(self):
         self.pid.clear()
         self._pid.join()
