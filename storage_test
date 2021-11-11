@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+# pyright: reportMissingImports=false
+
+from ev3dev2.motor import OUTPUT_A, OUTPUT_B,OUTPUT_C, OUTPUT_D, MoveTank, MoveSteering, LargeMotor, MediumMotor, SpeedPercent
+from ev3dev2.led import Leds
+from ev3dev2.button import Button
+from ev3dev2.sensor.lego import ColorSensor, UltrasonicSensor
+from ev3dev2.sensor import INPUT_1, INPUT_2, INPUT_3, INPUT_4
+from ev3dev2.sound import Sound
+import random
+import time
+import threading
+from importlib.machinery import SourceFileLoader
+
+Navigation = SourceFileLoader('Navigation', '/home/robot/N_R_C_2_0_2_1/Modules/Navigation').load_module()
+Memory = SourceFileLoader('Memory', '/home/robot/N_R_C_2_0_2_1/Modules/Memory').load_module()
+Polling = SourceFileLoader('Polling', '/home/robot/N_R_C_2_0_2_1/Modules/Polling').load_module()
+Storage = SourceFileLoader('car_storage', '/home/robot/N_R_C_2_0_2_1/Modules/car_storage').load_module()
+
+# Instantiate Brick
+leds = Leds()
+btn = Button()
+spk = Sound()
+
+# Instantiate Sensors
+left_ls = ColorSensor(INPUT_2)
+right_ls = ColorSensor(INPUT_3)
+
+# Instantiate Motors
+lm = LargeMotor(OUTPUT_B)
+rm = LargeMotor(OUTPUT_C)
+
+steering = MoveSteering(OUTPUT_B, OUTPUT_C)
+tank = MoveTank(OUTPUT_B, OUTPUT_C)
+
+# Threading
+m_lock = threading.Lock()
+
+# Min/Max Reflective Value
+minRef = 0
+maxRef = 50
+lls_Ref_black_white = 23
+rls_Ref_black_white = 22
+
+# Initialize instances
+
+ctrl = Navigation.Navigate(m_lock, minRef, maxRef, lls_Ref_black_white, rls_Ref_black_white)
+mem = Memory.Memory()
+store = Storage.Storage(mem, tank)
+poll = Polling.Poll(m_lock, minRef, maxRef, ctrl.rm, ctrl.lm, mem, 40.0, 25.0, 18.0, 5.0, False, False, 70, ctrl, store)
+
+left_ls.mode = 'COL-REFLECT'
+right_ls.mode = 'COL-REFLECT'
+# Start
+
+leds.set_color('LEFT', 'RED')
+leds.set_color('RIGHT', 'RED')
+
+# while not btn.enter:
+#     pass
+leds.all_off()
+
+# test starts 
+start_time = time.perf_counter()
+end_time = time.perf_counter()
+prev_pos = []
+cycle = 0
+
+while True:
+    if cycle == 0:
+        pos = random.randint(1,6)
+        prev_pos.append(pos)
+    else:
+        while True:
+            condition = 0
+            pos = random.randint(1,6)
+            for x in prev_pos:
+                if x == pos:
+                    condition += 1 
+            if condition == 0:
+                prev_pos.append(pos)
+                break
+            else:
+                continue 
+            
+    print(pos)
+    if cycle != 0:
+        store.align_storage(pos, 50, from_mid = False)
+    
+    else:
+        store.align_storage(pos, 50, from_mid = True)
+
+    print('done')
+    time.sleep(1)
+    cycle += 1
+    end_time = time.perf_counter()
+
+    if cycle == 6:
+        break
+
+store.reset_storage(50)
