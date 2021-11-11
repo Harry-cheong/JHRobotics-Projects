@@ -56,7 +56,7 @@ class Storage:
         self.pos_cars[pos] = [color]
 
     def remove_car(self, pos):
-        color = self.pos_cars[pos]
+        color = self.pos_cars[pos][0]
         self.pos_cars[pos] = ""
         if self.cars[color] == 0:
             raise RuntimeError("No such coloured car in storage system")
@@ -309,6 +309,8 @@ class Storage:
         self._align.start()
 
     def run_pusher(self,motor_spd, extend = True, retract = True):
-        self._push = threading.Thread(target = self.extend_retract, args = (motor_spd,), kwargs = {'extend':extend, 'retract':retract})
-        self._push.start()
+        # self._push = threading.Thread(target = self.extend_retract, args = (motor_spd,), kwargs = {'extend':extend, 'retract':retract})
+        # self._push.start()
+
+        self.extend_retract(motor_spd, extend=extend, retract=retract)
     
