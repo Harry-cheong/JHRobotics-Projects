@@ -1,0 +1,20 @@
+#!/usr/bin/env python3
+
+from ev3dev2.sensor.lego import ColorSensor
+from ev3dev2.sensor import INPUT_3, INPUT_4
+from ev3dev2.button import Button
+from time import sleep
+
+ls1 = ColorSensor(INPUT_4)
+ls2 = ColorSensor(INPUT_3)
+btn = Button()
+
+while True:
+    if btn.any():
+        print([ls1.red,ls1.blue,ls1.green])
+        print(ls1.color_name)
+        print([ls2.red,ls2.blue,ls2.green])
+        print(ls2.color_name)
+        sleep(2)
+    else:
+        sleep(0.01)

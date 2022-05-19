@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+from ev3dev2.motor import MediumMotor, OUTPUT_B, OUTPUT_C, SpeedPercent, MoveTank
+from ev3dev2.sensor.lego import ColorSensor
+from ev3dev2.sensor import INPUT_3, INPUT_4
+from ev3dev2.led import Leds
+from ev3dev2.button import Button
+from ev3dev2.sound import Sound
+from time import sleep
+from threading import Thread
+from ev3dev2.display import Display
+from PIL import Image, ImageFont, ImageDraw 
+#import statistics
+""" 
+Setup
+"""
+loop=False
+topseq = []
+botseq = []
+
+encod = {0:{'101':'B','102':'C','120':'D','121':'E','201':'F','202':'G','210':'H','212':'I'},
+         1:{'010':'J','012':'K','020':'L','021':'M','201':'N','202':'O','210':'P','212':'Q'},
+         2:{'010':'R','012':'S','020':'T','021':'U','101':'V','102':'W','120':'X','121':'Y'}       
+        }
+
+startfont = ImageFont.truetype("/home/robot/vscode.ev3projects/AmongUs-Regular.ttf",20)
+ctitlefont = ImageFont.truetype("/home/robot/vscode.ev3projects/inyourface.ttf", 30)
+cinfofont = ImageFont.truetype("/home/robot/vscode.ev3projects/AmaticSC-Bold.ttf", 16)
+cardscan = Image.open("/home/robot/vscode.ev3projects/Swipe_Card.bmp")
+valid = Image.open('/home/robot/vscode.ev3projects/pic.bmp')
+invalid = Image.open('/home/robot/vscode.ev3projects/notfound.bmp')
+
+screen = Display()
+leds = Leds()
+ls1 = ColorSensor(INPUT_4)
+ls2 = ColorSensor(INPUT_3)
+btn = Button()
+sound = Sound()
+tank_pair = MoveTank(OUTPUT_B, OUTPUT_C, motor_class=MediumMotor)
+MmB = MediumMotor(OUTPUT_B)
+MmC = MediumMotor(OUTPUT_C)
+
+def colorsequence():
+    prevtopseq = 'NoColor'
+    prevbotseq = 'NoColor'
+    global loop
+    toplist = []
+    botlist = []
+    while loop:
+        global topseq
+        global botseq
+        #ls1.rgb = (s1,s2,s3)
+        #ls2.rgb = (s1,s2,s3)
+        if max(ls1.rgb) - min(ls2.rgb)>= 50 and ls1.color_name != prevtopseq:
+            toplist.append(ls1.color_name)
+            toplist.append(ls1.rgb)
+        if max(ls2.rgb) - min(ls2.rgb) >= 50 and ls2.color_name != prevbotseq:
+            botlist.append(ls2.color_name) 
+            botlist.append(ls2.rgb)
+        prevtopseq = ls1.color_name
+        prevbotseq = ls2.color_name
+        botseq = [x for x in botlist if x != 'Brown' if x != 'Yellow']
+        topseq = [x for x in toplist if x != 'Brown' if x != 'Yellow']
+
+
+def start():
+    while True: # Checks if any button is pressed.
+        if btn.any():    
+            break
+        else:
+            sleep(0.01)
+    leds.all_off()
+    screen.clear()
+
+def gamescreen():
+    
+    screen.draw.text((25,5), 'AMONG US', font=startfont)
+    
+    screen.image.paste(cardscan, (9,28))
+    screen.update()
+
+#while True:
+for x in range(10):
+    #do scan
+    gamescreen()
+    #start()
+
+    topseq=[]
+    botseq=[] 
+
+    
+    loop = True
+    t = Thread(target=colorsequence)
+    t.start()
+
+    while True:
+        tank_pair.on(10, 10)
+        if MmB.wait_until('stalled') is True:
+            break
+
+    loop = False
+
+    while True:
+        tank_pair.on(-100, -100)
+        sleep(0.1)
+        if MmB.wait_until('stalled') is True and MmC.wait_until('stalled') is True:
+            MmB.stop(stop_action = 'brake')
+            MmC.stop(stop_action = 'brake')
+            break
+    
+    print(topseq)
+    print(botseq)

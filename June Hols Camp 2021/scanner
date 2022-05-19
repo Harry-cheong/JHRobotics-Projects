@@ -1,0 +1,249 @@
+#!/usr/bin/env python3
+"""
+work to be done:
+
+'Backend'(D)
+1. Fix the dict encod (D)
+2. define recursive function (D)
+3. sound(D)
+4. Include A & Z (D)
+5. Include first name + surname e.g. John T. for encodings 
+
+'Frontend'(D)
+1. Display - Format a namecard(D)
+2. Start screen (D)
+3. Scanning screen (D) <can be improved>
+
+'API'(TBC)
+1. Integrate display and scan 
+"""
+from ev3dev2.motor import MediumMotor, OUTPUT_B, OUTPUT_C, SpeedPercent, MoveTank
+from ev3dev2.sensor.lego import ColorSensor
+from ev3dev2.sensor.lego import LightSensor
+from ev3dev2.sensor import INPUT_3, INPUT_4
+from ev3dev2.led import Leds
+from ev3dev2.button import Button
+from ev3dev2.sound import Sound
+from time import sleep
+from threading import Thread
+from ev3dev2.display import Display
+from PIL import Image, ImageFont, ImageDraw 
+""" 
+Setup
+"""
+loop=False
+topseq = []
+botseq = []
+
+encod = {0:{'101':'B','102':'C','120':'D','121':'E','201':'F','202':'G','210':'H','212':'I'},
+         1:{'010':'J','012':'K','020':'L','021':'M','201':'N','202':'O','210':'P','212':'Q'},
+         2:{'010':'R','012':'S','020':'T','021':'U','101':'V','102':'W','120':'X','121':'Y'}       
+        }
+
+startfont = ImageFont.truetype("/home/robot/vscode.ev3projects/AmongUs-Regular.ttf",20)
+ctitlefont = ImageFont.truetype("/home/robot/vscode.ev3projects/inyourface.ttf", 30)
+cinfofont = ImageFont.truetype("/home/robot/vscode.ev3projects/AmaticSC-Bold.ttf", 16)
+cardscan = Image.open("/home/robot/vscode.ev3projects/Swipe_Card.bmp")
+valid = Image.open('/home/robot/vscode.ev3projects/pic.bmp')
+invalid = Image.open('/home/robot/vscode.ev3projects/notfound.bmp')
+
+screen = Display()
+leds = Leds()
+ls1 = ColorSensor(INPUT_4)
+ls2 = ColorSensor(INPUT_3)
+btn = Button()
+sound = Sound()
+tank_pair = MoveTank(OUTPUT_B, OUTPUT_C, motor_class=MediumMotor)
+MmB = MediumMotor(OUTPUT_B)
+MmC = MediumMotor(OUTPUT_C)
+"""
+Initialise Variables
+"""
+def compare(thislist, value):
+    for x in thislist:
+        if value == x:
+            return True
+        else:
+            return False
+#Scanner
+def colorsequence():
+    prevtopseq = 'NoColor'
+    prevbotseq = 'NoColor'
+    global loop
+    global topseq
+    global botseq
+    filter_color = ['Black','Brown','Yellow','NoColor','White']
+    while loop:
+        if compare(filter_color,ls1.color_name)  is False and ls1.color_name != prevtopseq:
+            topseq.append(ls1.color_name)
+            prevtopseq = ls1.color_name
+        if compare(filter_color,ls2.color_name)  is False and ls2.color_name != prevbotseq:
+            botseq.append(ls2.color_name) 
+            prevbotseq = ls2.color_name
+        
+
+def translatecolor(clist):    
+    try:
+        if len(clist) == 1:
+            return clist
+        else:
+            rawencoding = []
+            for color in clist:
+                if color == 'RED':
+                    rawencoding.append(0)
+                elif color == 'GREEN':
+                    rawencoding.append(1)
+                elif color == 'BLUE':
+                    rawencoding.append(2)
+            dictionaryindex = rawencoding[0]
+            del rawencoding[0]
+            encoding = [str(int) for int in rawencoding]
+            return dictionaryindex,"".join(encoding)
+    except:
+        return '_'   
+
+def interpret(data):
+    try:
+        if isinstance(data, list):
+            if data[0] == 'RED':
+                return 'A'
+            elif data[0] == 'BLUE':
+                return 'Z'
+            else:
+                return '_'
+        else:
+            try:
+                index = data[0]
+                specific = data[1]
+                return encod[index][specific]
+            except:
+                return '_'
+    except:
+        return '_'
+
+def start():
+    while True: # Checks if any button is pressed.
+        if btn.any():    
+            break
+        else:
+            sleep(0.01)
+    leds.all_off()
+    screen.clear()
+
+#Display
+def identitycard(name):
+    
+    #Title
+    screen.draw.text((12,5), 'Identification Card', font=ctitlefont)
+
+    #Card Frame
+    screen.draw.rectangle((0,0,177,127))
+    
+    #Image
+    screen.draw.rectangle((14,34,80,116))
+    screen.draw.rectangle((13,33,81,117))
+    screen.image.paste(valid,(15,35))
+    
+    #Information
+    screen.draw.text((85,35), '  Name: '+ str(name), font=cinfofont)
+    screen.draw.text((85,55), '    ID: 005304920 ', font=cinfofont)
+    screen.draw.text((85,75), 'Colour: Yellow', font=cinfofont)
+    screen.draw.text((85,95), '  AUTH: Noobmaster', font=cinfofont)
+    
+    screen.update()
+
+def gamescreen():
+    
+    screen.draw.text((25,5), 'AMONG US', font=startfont)
+    
+    screen.image.paste(cardscan, (9,28))
+    screen.update()
+
+def displayscanning():
+    #toprow
+    x1 = 0
+    x2 = 0
+    
+    while True:
+        sleep(0.1)
+        screen.clear()
+        screen.draw.rectangle((0,0,43,64))
+        screen.draw.rectangle((43,0,86,64))
+        screen.draw.rectangle((86,0,129,64))
+        screen.draw.rectangle((129,0,172,64))
+
+        #bottom row
+        screen.draw.rectangle((0,64,43,127))
+        screen.draw.rectangle((43,64,86,127))
+        screen.draw.rectangle((86,64,129,127))
+        screen.draw.rectangle((129,64,172,127))
+
+        #scaner?
+        screen.line(clear_screen=False, x1=x1, y1=0, x2=x2, y2=128, line_color='black', width=2)
+        screen.update()
+        if x1 == 172 and x2 == 172:
+            break
+        x1 += 1
+        x2 += 1
+"""
+defined functions
+"""
+
+def scan():
+    #do scan
+    global loop
+    global topseq
+    global botseq
+
+    topseq=[]
+    botseq=[] 
+
+    
+    loop = True
+    t = Thread(target=colorsequence)
+    t.start()
+
+    while True:
+        tank_pair.on(20, 20)
+        if MmB.wait_until('stalled') is True:
+            break
+
+    loop = False
+
+    while True:
+        tank_pair.on(-60, -60)
+        sleep(0.1)
+        if MmB.wait_until('stalled') is True and MmC.wait_until('stalled') is True:
+            MmB.stop(stop_action = 'brake')
+            MmC.stop(stop_action = 'brake')
+            break
+        
+
+while True:
+    #ev3 ready
+    leds.all_off()
+    leds.set_color('LEFT','GREEN')
+    leds.set_color('RIGHT','GREEN')
+    
+    #startscanner
+    gamescreen()
+    start()
+
+    scan()
+
+    print(topseq)
+    print(botseq)
+    top = interpret(translatecolor(topseq))
+    bot = interpret(translatecolor(botseq))
+
+    print(top + '.'+ bot +'')
+    if top == 'J' and bot == 'M':
+        leds.set_color('LEFT', 'GREEN')
+        leds.set_color('RIGHT', 'GREEN')
+        sound.speak('Access Granted')
+        sleep(5)
+    else:
+        leds.set_color('LEFT', 'RED')
+        leds.set_color('RIGHT', 'RED')
+        sound.speak('Access Denied')
+        sleep(5)   

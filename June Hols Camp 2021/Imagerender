@@ -1,0 +1,93 @@
+#!/usr/bin/env python3
+from ev3dev2.display import Display
+from time import sleep
+from PIL import Image, ImageFont, ImageDraw
+from ev3dev2.led import Leds
+from ev3dev2.button import Button
+
+
+screen = Display()
+leds = Leds()
+btn = Button()
+
+#valid=Image.open('/home/robot/vscode.ev3projects/og.amongus.png').resize((64,80),resample=Image.LANCZOS)
+
+leds.set_color('LEFT', 'RED')
+leds.set_color('RIGHT', 'RED')
+
+startfont = ImageFont.truetype("/home/robot/vscode.ev3projects/AmongUs-Regular.ttf",20)
+ctitlefont = ImageFont.truetype("/home/robot/vscode.ev3projects/inyourface.ttf", 30)
+cinfofont = ImageFont.truetype("/home/robot/vscode.ev3projects/AmaticSC-Bold.ttf", 16)
+cardscan = Image.open("/home/robot/vscode.ev3projects/Swipe_Card.bmp")
+valid = Image.open('/home/robot/vscode.ev3projects/pic.bmp')
+invalid = Image.open('/home/robot/vscode.ev3projects/notfound.bmp')
+
+#EV3screen is 128*178
+def identitycard():
+    
+    #Title
+    screen.draw.text((12,5), 'Identification Card', font=ctitlefont)
+
+    #Card Frame
+    screen.draw.rectangle((0,0,177,127))
+    
+    #Image
+    screen.draw.rectangle((14,34,80,116))
+    screen.draw.rectangle((13,33,81,117))
+    screen.image.paste(valid,(15,35))
+    
+    #Information
+    screen.draw.text((85,35), '  Name: Wang Chen', font=cinfofont)
+    screen.draw.text((85,55), '    ID: 005304920 ', font=cinfofont)
+    screen.draw.text((85,75), 'Colour: Yellow', font=cinfofont)
+    screen.draw.text((85,95), '  AUTH: Robotics', font=cinfofont)
+    
+    screen.update()
+
+def gamescreen():
+    
+    screen.draw.text((25,5), 'AMONG US', font=startfont)
+    
+    screen.image.paste(cardscan, (9,28))
+    screen.update()
+
+def displayscanning():
+    #toprow
+    x1 = 0
+    x2 = 0
+    
+    while True:
+        sleep(0.1)
+        screen.clear()
+        screen.draw.rectangle((0,0,43,64))
+        screen.draw.rectangle((43,0,86,64))
+        screen.draw.rectangle((86,0,129,64))
+        screen.draw.rectangle((129,0,172,64))
+
+        #bottom row
+        screen.draw.rectangle((0,64,43,127))
+        screen.draw.rectangle((43,64,86,127))
+        screen.draw.rectangle((86,64,129,127))
+        screen.draw.rectangle((129,64,172,127))
+
+        #scaner?
+        screen.line(clear_screen=False, x1=x1, y1=0, x2=x2, y2=128, line_color='black', width=2)
+        screen.update()
+        if x1 == 172 and x2 == 172:
+            break
+        x1 += 1
+        x2 += 1
+def game():
+    screen.clear()
+    gamescreen()
+    while True:
+        if btn.any():
+            break
+        else:
+            sleep(0.01)
+    displayscanning()
+    screen.clear()
+    identitycard()
+    sleep(5)
+    game()
+game()
