@@ -49,12 +49,29 @@ def reset_m():
     rm.set_degrees_counted(0)
     lm.set_degrees_counted(0)
 
+# For testing
 def pauseloop():
-    hub.status_light.on('red')
+    hub.status_light.on('orange')
     while not hub.left_button.is_pressed() and not hub.right_button.is_pressed():
         pass
     hub.status_light.on('green')
 
+# Recording runs 
+def change_mech():
+
+    # Ideal Time 
+    i_run1 =  80
+    i_run2 = 20
+    i_run3 = 40
+
+    hub.status_light.on('orange')
+    while not hub.left_button.is_pressed() and not hub.right_button.is_pressed():
+        pass
+    
+    # Custom to our runs
+        
+    hub.status_light.on('green')
+    
 def measure_m():
 
     reset_m()
@@ -353,126 +370,355 @@ def gyro_turn(target, marginoferror, speed, timeout = False, steering = 100):
     lm.stop()
     rm.stop()
 
+def run_1(run):
 
-# Global Constants
+    if not run:
+        return
 
-## Run 1
+    # Run 1 starts
+    gyro.reset_yaw_angle()
+    reset_m()
+    bmm.run_for_degrees(160, -30)
 
+    # Move out of Base
+    gyro_straight(30, 500, target = 0)
+    gyro_turn(82, 0,20)
+    gyro_straight(50, 1950, target = 85)
+
+    # M14: Bridge
+    gyro_turn(107, 1,10)
+    gyro_straight(40, 200, target = 108)
+    bmm.run_for_degrees(50, 30)
+
+    # M11: Home Delivery
+    gyro_straight(60, 580, target = 108)
+
+    # M14: Bridge
+    bmm.run_for_degrees(50, -30)
+    pair.move(550, unit = 'degrees', steering = 0, speed = 70)
+    bmm.run_for_degrees(50, 30)
+
+    # Transition
+    gyro_turn(55, 1,15)
+    gyro_straight(40, 1135, target = 55)
+
+    # M10: Sorting Center
+    gyro_turn(167, 1,20)
+    pair.move(180, unit = 'degrees', steering = 0, speed = 50)
+    # fmm.run_for_seconds(1.4, speed = -100)
+    gyro_straight(50, 290, target = 170)
+    # fmm.run_for_seconds(1.1, speed = 100)
+
+    # M09: Joining Track Tracks
+    pair.move(200, unit = 'degrees', steering = 0, speed = 50)
+    rm.start(speed = -35)
+    # fmm.start(speed = 100)
+    time.sleep(0.65)
+    while not gyro.get_yaw_angle() > -5:
+        pass
+    fmm.stop()
+    pair.stop()
+    pair.move(150, unit = 'degrees', steering = 0, speed = 50)
+    pair.move(20, unit = 'degrees', steering = 100, speed = -20)
+    bmm.start(speed = 30)
+    time.sleep(0.6)
+    bmm.stop()
+    pair.move(80, unit = 'degrees', steering = -100, speed = -40)
+
+    # Transition
+    bmm.run_for_degrees(60, -20)
+    pair.move(50, unit = 'degrees', steering = -100, speed = 40)
+    line_follow(40, 270, right_edge = False, right_ls = True, target = 62, scale_ref = False)
+    gyro_turn(-21, 1,20)
+    pair.move(660, unit = 'degrees', steering = 0, speed = -30)
+    gyro_turn(-8, 1,20)
+
+    # M09: Push train
+    bmm.set_stop_action('brake')
+    bmm.run_for_seconds(0.4, 50)
+    gyro_straight(35, 950, target = -8, forward = False)
+
+    #Transition
+    pair.move(50, unit = 'degrees', steering = 0, speed = -30)
+    bmm.run_for_degrees(-80, 30)
+    gyro_straight(50, 350, target = -3)
+    line_align(35,1.5,2,target = 62,correction_spd = 15, pos_beforeline = True, rel_front_back_line = False, timeout = True)
+    gyro.reset_yaw_angle()
+
+    # M08: Air Drop
+    pair.start(steering = 96, speed = -30)
+    while not gyro.get_yaw_angle() < -100:
+        pass
+    pair.stop()
+    pair.move(550, unit = 'degrees', steering = 0, speed = 50)
+
+    # Transition
+    line_follow(50, 770, right_edge = False, right_ls = False, target = 62, scale_ref = False)
+    gyro_turn(-62, 1,15)
+    gyro_straight(50, 550, target = -62)
+
+    # Crane
+    bmm.run_for_seconds(0.4, 60)
+    pair.move(350, unit = 'degrees', steering = 25, speed = 40)
+    pair.move(100, unit = 'degrees', steering = 0, speed = -40)
+    bmm.run_for_degrees(80, -30)
+
+    # Transition
+    gyro_straight(50, 280, target = -62)
+    line_align(50,0.5,2,target = 62,correction_spd = 15, pos_beforeline = True, rel_front_back_line = True, timeout = True)
+    gyro.reset_yaw_angle()
+
+    # Eject
+    gyro_straight(40, 950, target = -6)
+    bmm.run_for_seconds(0.25, 80)
+    gyro_turn(-17, 1,20)
+    pair.move(330, unit = 'degrees', steering = 0, speed = -70)
+    gyro_turn(0, 1,20)
+    pair.move(120, unit = 'degrees', steering = 0, speed = 70)
+    bmm.run_for_degrees(100, -50)
+
+    # Exit Run 1
+    fmm.start(speed = -100)
+    gyro_straight(100, 1150, target = -3)
+    fmm.stop()
+
+def run_2(run):
+
+    if not run:
+        return 
+
+    # Run 2 starts
+    gyro.reset_yaw_angle()
+
+    # Mission 1
+    gyro_straight(80, 700, target = 0)
+    
+    line_follow(40, 730, right_edge = False, right_ls = False, target = 62, scale_ref = False)
+    pair.move(30, unit = 'degrees', steering = 0, speed = -15)
+    pair.move(20, unit = 'degrees', steering = 0, speed = 15)
+    fmm.run_for_degrees(100, 100)
+
+    # Mission 2
+    pair.move(150, unit = 'degrees', steering = 0, speed = 30)
+    gyro_turn(-42, 1,15)
+    fmm.run_for_degrees(100, -100)
+
+    pair.move(120, unit = 'degrees', steering = 0, speed = 30)
+    bmm.run_for_degrees(100, speed = 100)
+    fmm.run_for_degrees(120, 100)
+    pair.move(370, unit = 'degrees', steering = 0, speed = -30)
+    bmm.run_for_degrees(100, speed = -100)
+    pair.move(120, unit = 'degrees', steering = 0, speed = 30)
+    lm.run_for_degrees(340, speed = -30 * lm_polarity)
+    bmm.run_for_degrees(100, speed = 100)
+    pair.move(200, unit = 'degrees', steering = 0, speed = -30)
+    bmm.run_for_degrees(100, speed = -100)
+    pair.move(1200, unit = 'degrees', steering = 0, speed = -100)
+
+    # Return to base
+
+
+def run_3(run):
+
+    if not run:
+        return  
+
+    # Run 3 starts
+    gyro.reset_yaw_angle()
+    reset_m()
+
+    # Move out of Base
+    gyro_straight(50, 1100, target = 0, forward = False)
+    pair.start(steering = -43, speed = -30)
+    while not gyro.get_yaw_angle() > 38:
+        pass
+    lm.stop()
+
+    # Platoon Truck
+    bmm.start(speed = -55)
+    pair.move(200, unit = 'degrees', steering = 0, speed = -50)
+    bmm.stop()
+    gyro_straight(20, 550, target = 40, forward = False)
+    bmm.start(speed = 100)
+    time.sleep(0.5)
+    bmm.stop()
+    pair.move(150, unit = 'degrees', steering = 0, speed = -20)
+
+    # Transition
+    rm.start(speed = 50*rm_polarity)
+    while not gyro.get_yaw_angle() < 8:
+        pass
+    rm.stop()
+    bmm.stop()
+    pair.move(400, unit = 'degrees', steering = 0, speed = 50)
+    rm.start(speed = -40*rm_polarity)
+    while not gyro.get_yaw_angle() > 35:
+        pass
+    rm.stop()
+
+    # Creative Project
+    gyro_straight(50, 1320, target = 42, forward = False)
+    gyro_turn(-68, 1,15)
+    pair.move(180, unit = 'degrees', steering = 0, speed = -50)
+    
+    fmm.start(speed = 100)
+    time.sleep(0.3)
+    fmm.stop()
+
+    # Transition
+    pair.start(steering = 0, speed = 40)
+    while not rls.get_reflected_light() < 50: 
+        pass
+    pair.stop()
+    line_align(40,1.5,2,target = 62,correction_spd = 15, pos_beforeline = False, rel_front_back_line = True, timeout = True)
+    gyro.reset_yaw_angle()
+    pair.move(20, unit = 'degrees', steering = 0, speed = -10)
+    lm.start(speed = 30*lm_polarity)
+    while not gyro.get_yaw_angle() > 88:
+        pass
+    lm.stop()
+    gyro_straight(60, 880, target = 88, forward = False)
+
+    # Blue Cargo
+    lm.start(speed = 50*lm_polarity)
+    rm.start(speed = -20*rm_polarity)
+    while not gyro.get_yaw_angle() > 177:
+        pass
+    lm.stop()
+    rm.stop()
+    
+    fmm.start(speed = -100)
+    time.sleep(0.45)
+    fmm.stop()
+
+    # Transition
+    lm.start(speed = -50*lm_polarity)
+    rm.start(speed = 20*rm_polarity)
+    time.sleep(0.80)
+    lm.stop()
+    rm.stop()
+
+    # Grey Cargo
+    rm.start(speed = 50*rm_polarity)
+    lm.start(speed = -28*lm_polarity)
+    while not gyro.get_yaw_angle() < 20:
+        pass
+    rm.stop()
+    lm.stop()
+    fmm.start(speed = 100)
+    time.sleep(0.45)
+    fmm.stop()
+    
+    # Transition
+    rm.start(speed = -50*rm_polarity)
+    lm.start(speed = 28*lm_polarity)
+    while not gyro.get_yaw_angle() > 84:
+        pass
+    rm.stop()
+    lm.stop()
+    if lls.get_reflected_light() > rls.get_reflected_light():
+        line_follow(50, 900, right_edge = True, right_ls = True, target = 62, scale_ref = False)
+    else:
+        line_follow(50, 900, right_edge = False, right_ls = False, target = 62, scale_ref = False, track_right = False)
+
+    lm.start(speed = 50 * lm_polarity)
+    while not gyro.get_yaw_angle() > 170:
+        pass
+    lm.stop()
+    gyro_straight(70, 920, target = 170, forward = True)
+    lm.start(speed = 8*lm_polarity)
+    rm.start(speed = 40*rm_polarity)
+    while not gyro.get_yaw_angle() < 118:
+        pass
+    lm.stop()
+    rm.stop()
+
+    # Unloading Cargo
+    gyro_straight(30, 250, target = 118, forward = False)
+    bmm.start(speed =  -30)
+    time.sleep(0.7)
+
+    # Accident Avoidance 
+    pair.start(steering = 0, speed = -30)
+    while not rls.get_reflected_light() < 62:
+        pass
+    pair.stop()
+    rm.run_for_degrees(60, speed =  30*rm_polarity)
+
+# Time Recording
+t_run1 = 0
+t_run2 = 0
+t_run3 = 0
+
+t_equipr2 = 0
+t_equipr3 = 0
+
+
+## Run 1 
 # Run 1 Constants
 gkp = 2
 gki = 0
 gkd = 0.2
 
-lm.set_stop_action('brake')
-rm.set_stop_action('brake')
-
 lkp = 1.65
 lki = 0
 lkd = 0
 
-# Run 1 starts
-line_align(30,1.5,1,target = 62,correction_spd = 15,pos_beforeline = True,timeout = True)
+# Motor Defaults
+lm.set_stop_action('brake')
+rm.set_stop_action('brake')
+fmm.set_stop_action('hold')
+bmm.set_stop_action('hold')
+
+# Run 1 Execution
 pauseloop()
-gyro.reset_yaw_angle()
-reset_m()
+clock_start = time.ticks_ms()
+run_1(True)
+t_run1 = lapse()
 
-# Move out of Base
-gyro_straight(35, 1750, target = 0)
-
-# M11: Home Delivery
-gyro_turn(18, 1,10)
-gyro_straight(40, 1100, target = 18)
-
-# Transition
-pair.move(550, unit = 'degrees', steering = 0, speed = 70)
-gyro_turn(-35, 1,15)
-gyro_straight(40, 1160, target = -35)
-
-# M10: Sorting Center
-gyro_turn(83, 1,20)
-pair.move(130, unit = 'degrees', steering = 0, speed = 30)
-fmm.run_for_seconds(0.6, speed = 100)
-pair.move(420, unit = 'degrees', steering = 0, speed = -30)
-fmm.run_for_seconds(0.6, speed = -100)
-pauseloop()
-
-# M09: Joining Track Tracks 
-pair.move(200, unit = 'degrees', steering = 0, speed = 30)
-pair.start(steering = 99, speed = -30)
-while not gyro.get_yaw_angle() < -90:
-    pass
-pair.stop()
-pair.move(80, unit = 'degrees', steering = 0, speed = 30)
-bmm.run_for_degrees(150, 50)
-pair.move(60, unit = 'degrees', steering = -100, speed = -30)
-bmm.run_for_degrees(200, -100)
-pair.move(60, unit = 'degrees', steering = 100, speed = -30)
-
-# M08: Air Drop
-line_follow(35, 560, right_edge = False, right_ls = True, target = 62, scale_ref = False) 
-pair.move(210, unit = 'degrees', steering = 0, speed = -20)
-gyro_turn(-45, 1,40)
-
-# Transition
-pair.move(220, unit = 'degrees', steering = 0, speed = 20)
-gyro_turn(-85, 1,20)
-
-# M09: Push train
-pair.move(300, unit = 'degrees', steering = 0, speed = -30)
-bmm.run_for_degrees(300, 100)
-pair.move(920, unit = 'degrees', steering = 0, speed = 30)
-
-#Transition
-bmm.run_for_degrees(300, -100)
-gyro_turn(-110, 1,20)
-pair.move(300, unit = 'degrees', steering = 0, speed = -50)
-line_align(30,1.5,1,target = 62,correction_spd = 15,pos_beforeline = True,timeout = True)
-pauseloop()
-
+## Run 2 
 # Run 2 Constants
 gkp = 3
 gki = 0
 gkd = 0.5
 
-lm.set_stop_action('brake')
-rm.set_stop_action('brake')
-
 lkp = 1.65
 lki = 0
 lkd = 0
 
-# Run 2 starts
-gyro.reset_yaw_angle()
+# Run 2 Motor Defaults
+lm.set_stop_action('brake')
+rm.set_stop_action('brake')
+fmm.set_stop_action('brake')
+bmm.set_stop_action('brake')
 
-# Mission 1
-gyro_straight(40, 700, target = 0)
-
-line_follow(35, 770, right_edge = False, right_ls = False, target = 62, scale_ref = False)
-pair.move(20, unit = 'degrees', steering = 0, speed = 20)
-fmm.run_for_degrees(100, 100)
-
-# Mission 2
-pair.move(150, unit = 'degrees', steering = 0, speed = 20)
-gyro_turn(-42, 1,15)
-fmm.run_for_degrees(100, -100)
-
-pair.move(160, unit = 'degrees', steering = 0, speed = 20)
-bmm.run_for_degrees(230, speed = 100)
-fmm.run_for_degrees(120, 100)
-pair.move(400, unit = 'degrees', steering = 0, speed = -20)
-bmm.run_for_degrees(300, speed = -100)
-pair.move(150, unit = 'degrees', steering = 0, speed = 20)
-lm.run_for_degrees(340, speed = -20 * lm_polarity)
-bmm.run_for_degrees(300, speed = 100)
-pair.move(200, unit = 'degrees', steering = 0, speed = -20)
-bmm.run_for_degrees(300, speed = -100)
-pair.move(700, unit = 'degrees', steering = 0, speed = -100)
-
+# Run 2 Execution
 pauseloop()
-# Return to base
+run_2(True)
+t_run2 = lapse()
 
-## Run 2
+## Run 3
+# Run 3 Constants
+gkp = 2
+gki = 0
+gkd = 0.2
 
+lkp = 1.3
+lki = 0
+lkd = 0
 
+# Run 3 Motor Defaults 
+lm.set_stop_action('brake')
+rm.set_stop_action('brake')
+fmm.set_stop_action('hold')
+bmm.set_stop_action('brake')
+
+# Run 3 Execution
+pauseloop()
+run_3(True)
+t_run3 = lapse()
+
+# print_timings()
 
 raise SystemExit
+
