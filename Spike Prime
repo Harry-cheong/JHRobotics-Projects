@@ -1,0 +1,588 @@
+# pyright: reportMissingImports=false
+
+from spike import ColorSensor, MotionSensor, Motor, MotorPair, PrimeHub
+import math
+import time
+
+# Hub
+hub = PrimeHub()
+
+# Motors
+lm = Motor('A')
+rm = Motor('B')
+
+lm.set_stop_action('brake')
+rm.set_stop_action('brake')
+
+pair = MotorPair('B','A')
+pair.set_motor_rotation(17.6 * math.pi, 'cm') # Sizes: Small (5.6cm) Large (17.6cm)
+
+
+fmm = Motor('C')
+bmm = Motor('D')
+
+# Sensors
+lls = ColorSensor('E')
+rls = ColorSensor('F')
+
+gyro = MotionSensor()
+
+# Constants
+minRef = 34
+maxRef = 99
+
+def lapse():
+
+    '''
+    lapse() utilizes internal CPU clock to count time elapsed. Used to measure the duration of runs
+    '''
+
+    global clock_start
+
+    duration = round((time.ticks_ms() - clock_start)/1000, 2)
+    clock_start = time.ticks_ms()
+    return duration 
+
+def reset_m():
+
+    '''
+    reset_m() resets the degrees counted to 0. 
+    '''
+
+    rm.set_degrees_counted(0)
+    lm.set_degrees_counted(0)
+
+# For testing
+def pauseloop():
+
+    '''
+    puaseloop() pauses code execution until any of the hub buttons are pressed. 
+    '''
+
+    hub.status_light.on('orange')
+    while not hub.left_button.is_pressed() and not hub.right_button.is_pressed():
+        pass
+    hub.status_light.on('green')
+    
+def measure_m():
+
+    '''
+    measure_m() is for the measurement of motor degrees. Used to measure distance required to reach a certain destination
+    '''
+
+    reset_m()
+
+    while not hub.left_button.is_pressed() and not hub.right_button.is_pressed():
+        print("RM: {rm}, LM: {lm}".format(rm = rm.get_degrees_counted(), lm = lm.get_degrees_counted()))
+
+    reset_m()
+    measure_m()
+
+
+def calibrate_ls():
+
+    '''
+    calibrate_ls() is used for the calibration of light sensors. Used for finding minRef and maxRef to scale light values
+    '''
+
+    minRef = 0
+    maxRef = 100
+    dataleft = []
+    dataright = []
+
+    # State
+    state = 1
+    hub.light_matrix.write(str(state))
+
+    while True:
+        if hub.left_button.is_pressed() and state < 3:
+            time.sleep_ms(500)
+            state += 1
+            hub.light_matrix.write(str(state))
+
+        elif hub.right_button.is_pressed() and state > 1:
+            state -= 1
+            time.sleep_ms(500)
+            hub.light_matrix.write(str(state))
+
+        dataleft.append(lls.get_reflected_light())
+        dataright.append(rls.get_reflected_light())
+        minRef = (min(dataleft)+min(dataright))/2
+        maxRef = (max(dataleft)+max(dataright))/2
+
+        if state == 1:
+            print('l.ref: {lref}, r.ref: {rref}'.format(lref = lls.get_reflected_light(),
+                                                        rref = rls.get_reflected_light()))
+        elif state == 2:
+            print('l.ref: {lref}, r.ref: {rref}'.format(lref = (100 * (lls.get_reflected_light() - minRef ) / ( maxRef - minRef)),
+                                                        rref = (100 * (rls.get_reflected_light() - minRef ) / ( maxRef - minRef))))
+
+        elif state == 3:
+            print('minref: {minref}, maxref: {maxref}'.format(maxref = maxRef,
+                                                            minref = minRef))
+
+class Control:
+    def __init__(self, 
+                fwd_polarity: None, 
+                steering_polarity: None, 
+                lm_polarity: None, 
+                rm_polarity: None,
+                ):
+        
+        '''
+        Perimeters:
+            tank_polarity: -1 or 1 
+            - if robot moves forward when steering = 0: 1
+            - if robot moves backward when steering = 0: -1
+
+            steering_polarity: -1 or 1
+            - if robot turns right when steering is +ve: 1
+            - if robot turns left when steering is +ve: -1
+
+            lm_polarity
+            - if running lm at +ve speed, motor moves forward: 1, otherwise -1
+
+            rm_polarity
+           - if running rm at +ve speed, motor moves forward: 1, otherwise -1
+        
+        '''    
+        if not fwd_polarity is None: raise ValueError('fwd_polarity Expected -1 or 1')
+        if not steering_polarity is None: raise ValueError('steering polarity Expected -1 or 1')
+        if not lm_polarity is None: raise ValueError('lm_polarity Expected -1 or 1')
+        if not rm_polarity is None: raise ValueError('rm_polarity Expected -1 or 1')
+        
+        self.fwd_polarity = fwd_polarity
+        self.steering_polarity = steering_polarity 
+        self.lm_polarity = lm_polarity
+        self.rm_polarity = rm_polarity
+    
+    
+    def line_follow(self,
+                    speed,
+                    deg,
+                    kp,
+                    ki,
+                    kd,
+                    target,
+                    right_edge = True,
+                    right_ls = True,
+                    scale_ref = False,
+                    track_right = True):
+
+        '''
+        line_follow() is an universal single line tracing program
+
+        Perimeters 
+
+            speed : (-100, 100)
+            - travelling speed of robot
+
+            deg: int
+            - Input for distance travelled by line tracing program
+
+            kp: int
+            - constant to tune effects of error
+
+            ki: int
+            - constant to tune effects of integral
+
+            kd: int
+            - constant to tune effects of derivative
+
+            target: (-100, 100) 
+            - ideal value for light sensor/ light value in between black and white line 
+
+            right_edge: bool
+            default: True
+            - specify which side of the line the robot will be tracing
+
+            right_ls: bool
+            default: True
+            - specify the light sensor which the robot obtains its light value input from
+
+            scale_ref: bool
+            default: False
+            - scale ref based on minRef and maxRef
+
+            track_right: bool 
+            default: True
+            - specify the motor which the robot obtains its degree readings from 
+
+
+        '''
+
+        if right_ls: ls = rls
+        else: ls = lls
+
+        if right_edge: polarity = self.steering_polarity
+        else: polarity = -self.steering_polarity
+
+        # Our robot forward is -ve
+        speed *= self.fwd_polarity
+
+        if track_right: tracked_motor = rm
+        else: tracked_motor = lm
+
+        last_error = error = integral = 0.0
+        derivative = 0.0
+
+        reset_m()
+
+        while not abs(tracked_motor.get_degrees_counted()) > deg:
+            if scale_ref:
+                reflected_light_intensity = (100 * (ls.get_reflected_light() - minRef ) / ( maxRef - minRef ))
+            else:
+                reflected_light_intensity = ls.get_reflected_light()
+            error = target - reflected_light_intensity
+
+            if error == 0:
+                integral = 0
+            else:
+                integral = integral + error
+
+            derivative = error - last_error
+            last_error = error
+
+            steering = round((kp * error) + (ki * integral) + (kd * derivative))
+            steering *= polarity
+
+            pair.start_at_power(speed, steering = steering)
+
+            # print('ref:{ref}, error:{err}, steering:{steer} '.format(ref = reflected_light_intensity, steer = steering, err = error))
+        pair.stop()
+
+    def line_align(self,
+            start_spd,
+            maxduration,
+            marginoferror,
+            target,
+            black_white = True,
+            correction_spd = None,
+            pos_beforeline = True,
+            rel_front_back_line = True,
+            timeout = True):
+
+        '''
+        line_align() aligns the robot perdendicular to a black and white line with 2 light sensors. 
+        Two phase line alignment program
+        Phase #1 : Approaches and catches the line
+        Phase #2 : Precise tuning of robot position so as to align the robot to be perpendicular to the line 
+
+        Perimeters
+            start_spd: (0, 100)
+            - the speed at which the robot approaches the line during phase #1
+
+            maxduration: int
+            - the duration (not inclu. time taken to catch the line) for which the robot tries to align itself
+
+            marginoferror: int
+            - when light value detected is in the range of target +- marginoferror, the line_align function ends regardless of duration 
+
+            target: int
+            - ideal value for light senor/ light value in between black and white line
+
+            black_white: bool
+            default = True
+            - if True, initial phase 'Course Adjustment' / 'Catching line' runs robot until sensor senses the black part of the line otherwise white
+
+            correction_spd: int
+            default = start_spd
+            - the speed at which the robot corrects its position during phase #2
+
+            pos_beforeline: bool
+            default = True
+            - robot starts off before the line if True
+            - robot starts off after the line if False
+
+            rel_front_back_line: bool
+            default: True
+            - relative to the starting pos of the robot, side of the line where the robot will end up
+
+
+        # Scenario #1
+
+             ________________________________ (rel_front_back_line = False) The robot will end up with light sensors aligned to this side of the line
+             / / / / / / / / / / / / / / / /                                   
+             ________________________________ (rel_front_back_line = True) The robot will end up with light sensors aligned to this side of the line
+
+                        ______     
+                        |     |      
+                        |     | /|\       pos_beforeline = True
+                        |     |  | 
+                        |_____| 
+
+
+        
+        # Scenario #2
+
+                        ______     
+                        |     |      
+                        |     |   |     pos_beforeline = False
+                        |     |  \|/
+                        |_____| 
+            
+             ________________________________ (rel_front_back_line = True) The robot will end up with light sensors aligned to this side of the line
+             / / / / / / / / / / / / / / / /                                   
+             ________________________________ (rel_front_back_line = False) The robot will end up with light sensors aligned to this side of the line
+
+        
+        '''
+
+        if pos_beforeline: 
+            polarity = 1
+            start_spd * self.fwd_polarity
+        else: 
+            polarity = -1
+            start_spd * -self.fwd_polarity
+
+        if correction_spd is None: correction_spd = start_spd
+
+        target_black = target - marginoferror
+        target_white = target + marginoferror
+
+        overrun_spd = -1 * polarity * correction_spd # if a robot overruns its destination, overrun_spd is the direction in which the robot will move
+        underrun_spd = 1 * polarity * correction_spd # if a robot underruns its destination, underrun_spd is the direction in which the robot will move
+
+    
+        # Coarse Adjustment
+
+        while True:
+            pair.start(steering = 0, speed = start_spd)
+
+            if black_white:
+
+                # Aligning towards black Line
+
+                if lls.get_reflected_light() <= target:
+                    lm.stop()
+                    while not rls.get_reflected_light() <= target:
+                        rm.start(speed = correction_spd * self.rm_polarity * polarity)
+                        # print(rls.get_reflected_light())
+                    rm.stop()
+                    break
+
+                else:
+                    if rls.get_reflected_light() <= target:
+                        rm.stop()
+                        while not lls.get_reflected_light() <= target:
+                            lm.start(speed = correction_spd * self.lm_polarity * polarity)
+                            # print(lls.get_reflected_light())
+                        lm.stop()
+                        break
+                    else:
+                        pass
+
+            else:
+
+                # Aligning towards White Line
+
+                if lls.get_reflected_light() >= target:
+                    lm.stop()
+                    while not rls.get_reflected_light() >= target:
+                        rm.start(speed = correction_spd * self.rm_polarity * polarity)
+                        # print(rls.get_reflected_light())
+                    rm.stop()
+                    break
+
+                else:
+                    if rls.get_reflected_light() >= target:
+                        rm.stop()
+                        while not lls.get_reflected_light() >= target:
+                            lm.start(speed = correction_spd * self.lm_polarity * polarity)
+                            # print(lls.get_reflected_light())
+                        lm.stop()
+                        break
+                    else:
+                        pass
+
+        # Fine Adjustment
+        start = time.ticks_ms()
+        end = time.ticks_ms()
+
+
+        while not (end - start) > maxduration*1000:
+            
+            if rel_front_back_line:
+                
+                if lls.get_reflected_light() < target:
+                    lm.start(speed = overrun_spd * self.lm_polarity)
+                else:
+                    if lls.get_reflected_light() > target:
+                        lm.start(speed = underrun_spd * self.lm_polarity)
+
+                    else:
+                        lm.stop()
+
+                if rls.get_reflected_light() < target:
+                    rm.start(speed = overrun_spd * self.rm_polarity)
+                else:
+                    if rls.get_reflected_light() > target:
+                        rm.start(speed = underrun_spd * self.rm_polarity)
+
+                    else:
+                        rm.stop()
+            
+            else:
+
+
+                if lls.get_reflected_light() < target:
+                    lm.start(speed = underrun_spd * self.lm_polarity)
+                else:
+                    if lls.get_reflected_light() > target:
+                        lm.start(speed = overrun_spd * self.lm_polarity)
+
+                    else:
+                        lm.stop()
+
+                if rls.get_reflected_light() < target:
+                    rm.start(speed = underrun_spd * self.rm_polarity)
+                else:
+                    if rls.get_reflected_light() > target:
+                        rm.start(speed = overrun_spd * self.rm_polarity)
+
+                    else:
+                        rm.stop()
+
+            if target_black < lls.get_reflected_light() < target_white and target_black < rls.get_reflected_light() < target_white:
+                break
+
+            if timeout:
+                end = time.ticks_ms()
+            else:
+                end = start
+
+        rm.stop()
+        lm.stop()
+
+        # print(lls.get_reflected_light())
+        # print(rls.get_reflected_light())
+
+    def gyro_straight(self, 
+                    speed,
+                    deg,
+                    kp, 
+                    ki,
+                    kd,
+                    target,
+                    track_right = True,
+                    forward = True):
+        '''
+        gyro_straight() uses the gyro sensor inbuilt into the hub to travel straight. 
+
+        Perimaters
+            speed: (-100, 100)
+            - speed at which the robot is travelling
+        
+            deg: int
+            - Input for distance travelled by line tracing program
+
+            kp: int
+            - constant to tune effects of error
+
+            ki: int
+            - constant to tune effects of integral
+
+            kd: int
+            - constant to tune effects of derivative
+
+            target: (-180, 180) 
+            - ideal value for light sensor/ light value in between black and white line  
+
+            track_right: bool 
+            default: True
+            - specify the motor which the robot obtains its degree readings from 
+
+            forward: bool
+            default = True
+            - the direction in which the robot will travel in 
+        '''
+        assert speed > 0
+        speed *= self.fwd_polarity
+
+        # -ve steering: right, +ve steering: left
+        polarity = self.steering_polarity
+
+        if not forward:
+            polarity = -self.steering_polarity
+            speed *= -self.fwd_polarity 
+        if target is None: raise ValueError('Missing Gyro Value')
+        last_error = error = integral = 0.0
+        derivative = 0.0
+
+        if track_right: tracked_motor = rm
+        else: tracked_motor = lm
+
+        reset_m()
+
+        while not abs(tracked_motor.get_degrees_counted()) > deg:
+            o_yaw = gyro.get_yaw_angle()
+            error = target - o_yaw
+
+            if error == 0:
+                integral = 0
+            else:
+                integral = integral + error
+
+            derivative = error - last_error
+            last_error = error
+
+            steering = ((kp * error) + (ki * integral) + (kd * derivative))*polarity
+
+            pair.start(steering = round(steering), speed = speed)
+            # print('reading: {r}, error: {e}, steering: {s}'.format(r= o_yaw, e = error, s = steering))
+
+        pair.stop()
+
+    def gyro_turn(self,
+                target, 
+                marginoferror, 
+                speed, 
+                timeout = False, 
+                steering = 100):
+
+        '''
+        gyro_turn() is a program that turns the robot till it reaches the desired bearing
+        * Note that this gyro_turn program while effective, is not the best gyro turn code out there. 
+
+        
+        Perimaters
+        target: 180, -180
+        - at bearing which the robot will end up facing
+
+        marginoferror: int
+        - stop the robot when the measured reading is within target+-marginoferror
+
+        speed: int
+        - the speed at which the robot turn
+
+        timout: int or bool
+        default: False
+        - if timeout value in seconds is given, the robot will stop turning when the time is reached. 
+
+        steering: (0, 100)
+        default: 100 #Turns on the spot
+        - the steering value affects the type of turn 
+        
+        '''
+        start = time.ticks_ms()
+        end = time.ticks_ms()
+
+        if type(timeout) == 'int': sec = timeout
+        else: sec = 0
+
+        while not (end-start) > sec*1000:
+            o_yaw = gyro.get_yaw_angle()
+            
+            if target - o_yaw < 0:
+                pair.start(speed = speed, steering = steering * -1)
+            elif target - o_yaw > 0:
+                pair.start(speed = speed, steering = steering)
+            elif abs(target - o_yaw) <= marginoferror:
+                break
+
+            if timeout:
+                end = time.ticks_ms()
+                print('timeout')
+
+        lm.stop()
+        rm.stop()
