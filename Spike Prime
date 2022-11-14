@@ -18,8 +18,8 @@ pair = MotorPair('B','A')
 pair.set_motor_rotation(17.6 * math.pi, 'cm') # Sizes: Small (5.6cm) Large (17.6cm)
 
 
-fmm = Motor('C')
-bmm = Motor('D')
+# fmm = Motor('C')
+# bmm = Motor('D')
 
 # Sensors
 lls = ColorSensor('E')
